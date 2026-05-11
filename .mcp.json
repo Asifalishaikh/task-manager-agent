@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "task_manager_mcp": {
+      "type": "remote",
+      "url": "http://localhost:8000/mcp"
+    }
+  }
+}

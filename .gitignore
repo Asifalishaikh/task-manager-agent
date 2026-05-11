@@ -1,5 +1,13 @@
 # Progress tracking
 progress.txt
+Progress.MD
+
+# Auto-generated agent/skills cache
+.agents/
+.claude/skills/
+
+# Local Claude settings (machine-specific)
+.claude/settings.local.json
 
 # OS generated files
 .DS_Store
