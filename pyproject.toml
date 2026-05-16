@@ -1,6 +1,6 @@
 [project]
 name = "task-manager-agent"
-version = "0.1.0"
+version = "0.0.1"
 description = "A multi-agent task management system using OpenAI Agents SDK and FastAPI."
 readme = "README.md"
 requires-python = "==3.12.2"
