@@ -320,6 +320,99 @@ Use `/permissions` to pre-allow safe commands. **Never use `--dangerously-skip-p
 
 ---
 
+## Containerization & Deployment Strategy
+
+### 1. Image Registry
+
+- **Registry:** GitHub Container Registry (`ghcr.io`)
+- **Visibility:** Public (matches public repo)
+- **Tag pattern:** `ghcr.io/<owner>/<repo>/<service>:<tag>`
+  - e.g., `ghcr.io/asifalishaikh/task-manager/task-mcp:v0.1.0`
+- **Tag strategy:** `v<semver>` for releases, `latest` for tip-of-main, `pr-<number>` for PR builds
+
+### 2. Dockerfiles
+
+Each service gets its own `Dockerfile` at the root of the service directory:
+
+```
+services/
+├── task-mcp/            # MCP server (moved from task_manager_mcp/)
+│   ├── Dockerfile
+│   ├── .dockerignore
+│   └── ...
+├── task-manager-agent/  # Orchestrator agent
+│   ├── Dockerfile
+│   └── ...
+└── notification-api/    # Notification service
+    ├── Dockerfile
+    └── ...
+```
+
+- **Build context** = the service directory (not monorepo root)
+- **Multi-stage builds** for dependency caching (uv → runtime)
+- **`.dockerignore`** per service to exclude `.venv/`, `__pycache__/`, `.git/`
+- Use `uv sync --no-dev` for minimal production images
+
+### 3. Kubernetes Manifests & Helm Charts
+
+All deployment artifacts live in a single `Deployments/` folder at the repository root:
+
+```
+Deployments/
+├── k8s/                          # Raw Kubernetes manifests
+│   ├── task-mcp/
+│   │   ├── deployment.yaml
+│   │   ├── service.yaml
+│   │   ├── configmap.yaml
+│   │   └── hpa.yaml
+│   ├── task-manager-agent/
+│   │   └── ...
+│   └── namespace.yaml
+├── helm/                         # Helm charts (if needed)
+│   ├── task-mcp/
+│   │   ├── Chart.yaml
+│   │   ├── values.yaml
+│   │   ├── values-production.yaml
+│   │   └── templates/
+│   │       ├── deployment.yaml
+│   │       ├── service.yaml
+│   │       └── _helpers.tpl
+│   └── ...
+└── README.md                     # How to deploy
+```
+
+**Conventions:**
+- Raw `k8s/` manifests for simple/single-service deployments
+- `helm/` charts for configurable multi-environment deployments (dev/staging/prod)
+- All manifests reference images via environment-parameterized tags (never hardcoded `:latest`)
+- Use `kustomize` overlays if environments share 90%+ of config but need small diffs
+
+### 4. CI/CD Integration (Future)
+
+```
+[Commit] → [GitHub Action: Build & Push Image]
+                              ↓
+                     ghcr.io/<service>:<tag>
+                              ↓
+                [GitHub Action: Deploy to K8s]
+                              ↓
+                    kubectl apply -f Deployments/k8s/
+                    OR helm upgrade <release> Deployments/helm/
+```
+
+### 5. Service Directory Migration (Near-term)
+
+Current layout needs alignment:
+
+| Current | Target |
+|---------|--------|
+| `task_manager_mcp/` | `services/task-mcp/` |
+| `src/task_manager_agent/` | `services/task-manager-agent/` |
+
+This migration is non-urgent but should be done before writing the first Dockerfile.
+
+---
+
 ## Future Enhancements
 
 - Introduce LLM-based intent detection and entity extraction
