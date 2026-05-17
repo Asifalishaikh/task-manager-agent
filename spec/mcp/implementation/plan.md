@@ -2,6 +2,7 @@
 
 > **Status:** Plan  
 > **Date:** 2026-05-08  
+> **Updated:** 2026-05-16 — MCP server moved from `task_manager_mcp/` to `services/task-mcp/`  
 > **Package manager:** `uv`  
 > **Framework:** FastMCP (Python)  
 > **Transport:** Streamable HTTP  
@@ -10,21 +11,21 @@
 
 ## Step 1 - Project Setup
 
-Create the MCP server package alongside the existing project.
+Create the MCP server package under `services/`.
 
 ```bash
 # Create package directory
-mkdir -p task_manager_mcp/src/task_manager_mcp/tools
+mkdir -p services/task-mcp/src/task_manager_mcp/tools
 
 # Init pyproject.toml with uv
-cd task_manager_mcp
+cd services/task-mcp
 uv init --app --python 3.12
 ```
 
 **Project structure:**
 
 ```
-task_manager_mcp/
+services/task-mcp/
   src/
     task_manager_mcp/
       __init__.py
@@ -47,7 +48,7 @@ task_manager_mcp/
 ## Step 2 - Dependencies
 
 ```bash
-cd task_manager_mcp
+cd services/task-mcp
 uv add "mcp[cli]"
 ```
 
@@ -165,11 +166,11 @@ if __name__ == "__main__":
 ## Step 7 - Running the Server
 
 ```bash
-# From task_manager_mcp/ directory:
+# From services/task-mcp/ directory:
 uv run python -m task_manager_mcp
 
 # Or with uv run directly:
-uv run --package task_manager_mcp python -m task_manager_mcp
+uv run --package task-manager-mcp python -m task_manager_mcp
 
 # Server starts at: http://localhost:8000/mcp
 ```
@@ -229,7 +230,7 @@ After implementation, verify:
 ## Files to Create (Summary)
 
 ```
-task_manager_mcp/
+services/task-mcp/
   pyproject.toml            # uv init; dependencies: mcp
   src/
     task_manager_mcp/

@@ -23,41 +23,40 @@ To open it:
 - **Deployment Target:** Kubernetes (K8s)
 - **Added MCP from skills.sh:** npx skills add https://github.com/anthropics/skills --skill mcp-builder (manualy)
 
- Start server (Terminal 1):
-  cd /mnt/d/coding/task-manegment-agent/task_manager_mcp
-  uv run python -m src.task_manager_mcp
+## Running
 
-  Connect Claude Code (Terminal 2):
-  cd /mnt/d/coding/task-manegment-agent
-  claude
-testing after tool creation in project 
-```Prompt 
-List all the MCP tools availabe to you? documents  
-``` 
+### Start MCP Server (Terminal 1):
+```bash
+cd services/task-mcp
+uv run python -m src.task_manager_mcp
+```
 
-● You're seeing two pyproject.toml files because this is a UV workspace (monorepo) setup:
+### Connect Claude Code (Terminal 2):
+```bash
+cd /mnt/d/coding/task-manegment-agent
+claude
+```
 
-  1. Root — D:\coding\task-manegment-agent\pyproject.toml
+> After creating new tools, test with: *"List all the MCP tools available to you?"*
 
-  - Project name: task-manager-agent
-  - Purpose: The main multi-agent system (OpenAI Agents SDK + FastAPI)
-  - Acts as the workspace root — it declares the sub-package as a member:
-  [tool.uv.workspace]
-  members = ["task_manager_mcp"]
+---
 
-  2. Sub-package — D:\coding\task-manegment-agent\task_manager_mcp\pyproject.toml
+## Monorepo Structure
 
-  - Project name: task-manager-mcp
-  - Purpose: The MCP server with the 5 intent-based tools (capture_task, review_task, modify_task, resolve_task, remove_task)
-  - Has its own dependencies (just mcp[cli])
-  - Gets managed as part of the workspace — uv resolves dependencies across both projects together
+This project uses **uv workspaces** (standard monorepo pattern):
 
-  ---
-  Why this structure?
+```
+Root (task-manager-agent)
+├── services/
+│   ├── task-mcp/                    # MCP server (5 intent-based tools)
+│   │   └── pyproject.toml           # name: task-manager-mcp
+│   └── task-manager-agent/          # Multi-agent orchestrator
+│       └── pyproject.toml           # name: task-manager-agent
+├── pyproject.toml                   # Workspace root
+└── uv.lock                          # Single lock file
+```
 
-  It lets you develop two related Python packages in one repo with:
-  - Shared lock file (uv.lock) — single source of truth for all dependencies
-  - Independent builds — each package can be published or deployed separately
-  - Clean separation — the MCP server doesn't need to import the agent code or vice versa
-
-  So it's not duplication — it's a standard monorepo pattern with UV workspaces.
+Why this structure?
+- **Shared lock file** — single source of truth for all dependencies
+- **Independent builds** — each package deployed separately
+- **Clean separation** — MCP server doesn't import agent code or vice versa

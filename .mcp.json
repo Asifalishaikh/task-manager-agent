@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "task_manager_mcp": {
+    "task-mcp": {
       "type": "remote",
       "url": "http://localhost:8000/mcp"
     }

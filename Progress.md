@@ -8,7 +8,7 @@
 - [x] Project documentation: README.md, AGENTS.md, CLAUDE.md
 
 ## ✅ Milestone 2: MCP Server with Intent-Based Tools
-- [x] `task_manager_mcp` workspace package created
+- [x] `services/task-mcp` workspace package created (moved from `task_manager_mcp/`)
 - [x] 5 intent-based MCP tools implemented:
   - **capture_task** — Capture new tasks with title, description, priority, deadline
   - **review_task** — Review, list, and search tasks with various filters
@@ -39,7 +39,7 @@
 - [x] TDD & engineering standards documented
 
 ## 🔄 Current: Task Manager Agent Scaffold
-- [x] `src/task_manager_agent/` package structure created
+- [x] `services/task-manager-agent/` package structure created (moved from `src/task_manager_agent/`)
 - [x] `main.py` entry point ready
 - [x] Workspace configuration in `pyproject.toml`
 - [x] Dependencies: openai-agents, fastapi, uvicorn, pydantic

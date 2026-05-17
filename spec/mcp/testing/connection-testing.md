@@ -1,8 +1,9 @@
 # MCP Connection Testing & Communication Flow
 
 > **Date:** 2026-05-09  
+> **Updated:** 2026-05-16 — server moved to `services/task-mcp/`  
 > **Status:** Verified (all 5 tools tested against live server)  
-> **Server:** task_manager_mcp (Streamable HTTP on port 8000)
+> **Server:** task-mcp (Streamable HTTP on port 8000)
 
 ---
 
@@ -13,7 +14,7 @@ Created at project root:
 ```json
 {
   "mcpServers": {
-    "task_manager_mcp": {
+    "task-mcp": {
       "type": "remote",
       "url": "http://localhost:8000/mcp"
     }
@@ -30,8 +31,8 @@ Created at project root:
 ### Step 1: Start the MCP Server
 
 ```bash
-# From the task_manager_mcp directory:
-cd task_manager_mcp
+# From the services/task-mcp directory:
+cd services/task-mcp
 uv run python -m src.task_manager_mcp
 ```
 
@@ -93,7 +94,7 @@ You (Human)
 Claude Code (Agent / Orchestrator)
     |
     v  JSON-RPC over HTTP (Streamable HTTP)
-task_manager_mcp (MCP Server)
+task-mcp (MCP Server)
     |
     v  in-memory operations
 InMemoryTaskStore (Data)

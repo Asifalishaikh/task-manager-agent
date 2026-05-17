@@ -2,6 +2,7 @@
 
 > **Status:** Launch Spec  
 > **Date:** 2026-05-09  
+> **Updated:** 2026-05-16 — MCP server moved from `task_manager_mcp/` to `services/task-mcp/`  
 > **Informed by:** .agents/skills/mcp-builder/SKILL.md (phases 1-4 workflow)  
 > **Package manager:** uv (CLI commands only)  
 > **Framework:** Python FastMCP (per mcp-builder Python guide)  
@@ -33,26 +34,28 @@ The following architectural decisions are validated against the **mcp-builder sk
 
 ### 1.1 New Package Layout
 
-Create a separate MCP server package **within the monorepo** at project root:
+Create a separate MCP server package **within the monorepo** under `services/`:
 
 `
 task-manager-agent/
-├── task_manager_mcp/              # NEW: MCP server package
-│   ├── pyproject.toml             # uv-managed Python project
-│   └── src/
-│       └── task_manager_mcp/
-│           ├── __init__.py
-│           ├── __main__.py        # Entry: mcp.run(transport="streamable_http", port=8000)
-│           ├── server.py          # FastMCP instance + store init + lifespan
-│           ├── models.py          # Task, TaskStatus, TaskPriority + input models
-│           ├── store.py           # InMemoryTaskStore (thread-safe)
-│           └── tools/
-│               ├── __init__.py    # Import all tool modules
-│               ├── capture.py     # @mcp.tool(name="capture_task")
-│               ├── review.py      # @mcp.tool(name="review_task")
-│               ├── modify.py      # @mcp.tool(name="modify_task")
-│               ├── resolve.py     # @mcp.tool(name="resolve_task")
-│               └── remove.py      # @mcp.tool(name="remove_task")
+├── services/
+│   └── task-mcp/                  # MCP server package
+│       ├── pyproject.toml         # uv-managed Python project
+│       └── src/
+│           └── task_manager_mcp/
+│               ├── __init__.py
+│               ├── __main__.py    # Entry: mcp.run(transport="streamable_http", port=8000)
+│               ├── server.py      # FastMCP instance + store init + lifespan
+│               ├── models.py      # Task, TaskStatus, TaskPriority + input models
+│               ├── store.py       # InMemoryTaskStore (thread-safe)
+│               └── tools/
+│                   ├── __init__.py    # Import all tool modules
+│                   ├── capture.py     # @mcp.tool(name="capture_task")
+│                   ├── review.py      # @mcp.tool(name="review_task")
+│                   ├── modify.py      # @mcp.tool(name="modify_task")
+│                   ├── resolve.py     # @mcp.tool(name="resolve_task")
+│                   └── remove.py      # @mcp.tool(name="remove_task")
+├── Deployments/                   # K8s manifests & Helm charts
 ├── .mcp.json                      # Claude Code MCP client config
 └── spec/
     └── mcp/
@@ -305,7 +308,7 @@ The server module imports 	ools which triggers decorator registration.
 `
 
 **Usage:**
-1. Start MCP server: cd task_manager_mcp && uv run python -m task_manager_mcp
+1. Start MCP server: cd services/task-mcp && uv run python -m task_manager_mcp
 2. Claude Code auto-detects .mcp.json and connects
 3. Tools appear in Claude's tool list
 
@@ -395,7 +398,7 @@ Before implementation is complete, verify against the mcp-builder Quality Checkl
 - [ ] Constants defined at module level in UPPER_CASE
 
 ### Testing
-- [ ] uv run python -m task_manager_mcp starts without errors
+- [ ] cd services/task-mcp && uv run python -m task_manager_mcp starts without errors
 - [ ] All imports resolve correctly
 - [ ] MCP Inspector connects and lists 5 tools
 - [ ] Sample tool calls work as expected
@@ -432,7 +435,7 @@ master              (stable specs, released code)
 git checkout -b feature/mcp-server
 
 # Work through phases A-G, committing after each verified phase
-git add task_manager_mcp/ .mcp.json spec/mcp/testing/connection-testing.md
+git add services/task-mcp/ .mcp.json spec/mcp/testing/connection-testing.md
 git commit -m "feat: add MCP server package scaffold (Phase A)"
 
 # Keep the spec updates on master separate
