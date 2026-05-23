@@ -37,7 +37,7 @@ RUN uv lock && \
 # ── Layer 2: Source code (changes frequently) ─────────────────────────
 COPY src/ ./src/
 RUN uv sync --no-dev && \
-    python -c "from task_manager_mcp.server import mcp; tools = mcp._tool_manager.tools; print(f'Verified {len(tools)} tools registered')"
+    uv run python -c "from task_manager_mcp.server import mcp; count = len(mcp._tool_manager._tools); print(f'Verified {count} tools registered')"
 
 # ---------------------------------------------------------------------------
 # STAGE 2 — Runtime: minimal image with only what is needed to run

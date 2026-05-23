@@ -38,9 +38,60 @@
 - [x] Skills for workflow automation
 - [x] TDD & engineering standards documented
 
-## 🔄 Current: Task Manager Agent Scaffold
+## ✅ Milestone 5: Multi-Stage Docker Build
+- [x] `services/task-mcp/Dockerfile` — multi-stage build (builder + runtime)
+- [x] `services/task-mcp/.dockerignore` — excludes venv, pycache, IDE, git
+- [x] `services/task-mcp/README.md` — Docker quick start, build, run, verify docs
+- [x] Non-root security user in runtime stage
+- [x] HEALTHCHECK for container health monitoring
+
+## 🔄 Current: Task Manager Agent (Multi-Agent Orchestrator)
+
+### ✅ Done
 - [x] `services/task-manager-agent/` package structure created (moved from `src/task_manager_agent/`)
 - [x] `main.py` entry point ready
 - [x] Workspace configuration in `pyproject.toml`
 - [x] Dependencies: openai-agents, fastapi, uvicorn, pydantic
- 
+
+### 📋 Planned Steps
+- [ ] **Step 1: Agent definition** — Create `agent.py` with Task Manager Agent using OpenAI Agents SDK, connected to `task-mcp` server via `MCPServer` (auto-discovers all 5 MCP tools)
+- [ ] **Step 2: FastAPI server** — Rewrite `main.py` with `/chat` endpoint that accepts user messages, runs the agent, and returns responses
+- [ ] **Step 3: End-to-end test** — Start MCP server + agent server, send a request, verify agent calls MCP tools correctly
+
+### Architecture
+```
+User → POST /chat → FastAPI → Task Manager Agent (OpenAI SDK)
+                                        ↓
+                              MCP Client ←→ MCP Server (:8000)
+                                                ↓
+                                         InMemoryTaskStore
+```
+
+## 📅 Planned: Future Phases
+
+  ## 📅 Future Phases
+    Phase 2: Database (SQLite → PostgreSQL)
+    Phase 3: User Concept (owner field)
+    Phase 4: Auth (API keys / JWT)
+    Phase 5: K8s deployment
+    
+### Phase 2: Database Persistence
+- [ ] Swap `InMemoryTaskStore` with `DatabaseTaskStore` (same interface)
+- [ ] Start with **SQLite** (zero setup, file-based)
+- [ ] Migrate to **PostgreSQL** for K8s production
+- [ ] Tool interfaces stay identical — no agent-facing changes
+
+### Phase 3: User Concept
+- [ ] Add `owner: str = "default"` to Task model
+- [ ] `capture_task` auto-assigns owner from request context
+- [ ] `review_task` scopes results by owner
+
+### Phase 4: Login & Auth
+- [ ] API Keys or JWT auth middleware
+- [ ] Auth extracts user identity, injects into request context
+- [ ] Tools never handle auth directly
+
+### Phase 5: Kubernetes Deployment
+- [ ] `Deployments/k8s/` manifests (Deployment, Service, ConfigMap, HPA)
+- [ ] `Deployments/helm/` charts for multi-environment
+- [ ] CI/CD with GitHub Actions → ghcr.io → K8s
