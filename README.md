@@ -84,6 +84,28 @@ curl -X POST http://localhost:8000/mcp \
 
 ---
 
+## CI/CD — GitHub Actions
+
+Every push to `master` that changes `services/task-mcp/**` triggers an automatic build and push.
+
+| File | Purpose |
+|------|---------|
+| `.github/workflows/task-mcp-ci.yml` | Builds Docker image, pushes to ghcr.io |
+
+**Automatic tags:**
+| Trigger | Tag |
+|---------|-----|
+| Push to `master` | `master`, `sha-<commit>` |
+| Git tag `v*` (release) | `v0.1.0`, `latest` |
+| Pull request | Build only (no push) |
+
+**Latest published image:**
+```
+docker pull ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp:master
+```
+
+---
+
 ## Run Method Comparison: Python/uv vs Docker
 
 You can run the MCP server two ways — here's how they compare:
