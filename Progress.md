@@ -44,6 +44,7 @@
 - [x] `services/task-mcp/README.md` — Docker quick start, build, run, verify docs
 - [x] Non-root security user in runtime stage
 - [x] HEALTHCHECK for container health monitoring
+- [x] Image built, run, and verified — `docker build + docker run + curl tools/list` ✅
 
 ## 🔄 Current: Task Manager Agent (Multi-Agent Orchestrator)
 
@@ -67,14 +68,26 @@ User → POST /chat → FastAPI → Task Manager Agent (OpenAI SDK)
                                          InMemoryTaskStore
 ```
 
-## 📅 Planned: Future Phases
+## ✅ Milestone 6: Container Registry & CI/CD
 
-  ## 📅 Future Phases
-    Phase 2: Database (SQLite → PostgreSQL)
-    Phase 3: User Concept (owner field)
-    Phase 4: Auth (API keys / JWT)
-    Phase 5: K8s deployment
-    
+### ✅ Done
+- [x] Image tagged for registry (`ghcr.io/asifalishaikh/task-manager-mcp:v0.1.0`)
+- [x] Logged in to ghcr.io via GitHub CLI
+- [x] Image pushed to GitHub Container Registry
+- [x] Image verified — pullable from `ghcr.io/asifalishaikh/task-manager-mcp:v0.1.0`
+- [x] CI/CD workflow created: `.github/workflows/task-mcp-ci.yml`
+
+### CI/CD workflow details
+```yaml
+# .github/workflows/task-mcp-ci.yml
+# Triggers on push/PR to master when services/task-mcp/** changes
+# Builds Docker image with docker/build-push-action
+# Pushes to ghcr.io with tags: commit SHA, branch name
+```
+
+### 📋 Planned: task-manager-agent CI/CD
+- [ ] Add CI/CD for `task-manager-agent` service (when that service has a Dockerfile)
+
 ### Phase 2: Database Persistence
 - [ ] Swap `InMemoryTaskStore` with `DatabaseTaskStore` (same interface)
 - [ ] Start with **SQLite** (zero setup, file-based)
@@ -94,4 +107,4 @@ User → POST /chat → FastAPI → Task Manager Agent (OpenAI SDK)
 ### Phase 5: Kubernetes Deployment
 - [ ] `Deployments/k8s/` manifests (Deployment, Service, ConfigMap, HPA)
 - [ ] `Deployments/helm/` charts for multi-environment
-- [ ] CI/CD with GitHub Actions → ghcr.io → K8s
+- [ ] CI/CD with GitHub Actions → ghcr.io → K8s          
