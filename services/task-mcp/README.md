@@ -13,6 +13,10 @@ uv run python -m task_manager_mcp
 # → http://localhost:8000/mcp
 ```
 
+## CI/CD
+
+This service has a GitHub Actions workflow (`.github/workflows/task-mcp-ci.yml`) that auto-builds and pushes to `ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp` on every push.
+
 ## Docker
 
 ### Build
