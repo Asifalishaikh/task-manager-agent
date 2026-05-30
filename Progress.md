@@ -72,7 +72,7 @@
 - [x] Studied `Capabilities` — `Filesystem`, `Shell`, `Memory`, `Skills`, `Compaction`
 - [x] Studied `Manifest` — workspace entries (local dirs, git repos, string files, cloud mounts)
 - [x] Studied `DockerSandboxClient` — bridge between SandboxAgent and K8s (container isolation)
-- [x] **Decision documented** in README.md: Simple Agent now, SandboxAgent for K8s future
+- [x] **Decision documented** in README.md and `docs/adrs/agent-decision.md`: Simple Agent now, SandboxAgent for K8s future
 
 ### Architecture decision
 
