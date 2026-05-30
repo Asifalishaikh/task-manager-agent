@@ -183,36 +183,54 @@ agent = SandboxAgent(
 
 ### Decision for this project
 
-| Need | Required? | Agent choice |
-|---|---|---|
-| Call MCP tools (capture, review, modify, resolve, remove) | Yes | Both work |
-| Edit files / run commands | No | Agent is enough |
-| Isolated workspace | No | Agent is enough |
+| Phase | Agent | When |
+|-------|-------|------|
+| **Now** | **Simple Agent** — call MCP tools, return responses | Immediate — build CLI first |
+| **Future (K8s)** | **SandboxAgent** + `DockerSandboxClient` — agents that edit files, run commands, manage code | When we need workspace isolation + K8s parity |
 
-**We use Agent** - our Task Manager Agent only needs to call MCP tools and return responses. SandboxAgent adds complexity (Docker client, manifests, capabilities) with no benefit for our current use case.
+**SandboxAgent is the bridge to Kubernetes.** The `DockerSandboxClient` gives us container-level isolation that maps directly to K8s pods. When we deploy to K8s, the Simple Agent runs as an HTTP service, and SandboxAgent handles file/code operations inside isolated containers.
+
+```
+K8s Pod
+├── Simple Agent (HTTP server)    ← handles user chat + MCP calls
+└── SandboxAgent (sandboxed)     ← handles file ops, shell commands (future)
+         ↓
+  DockerSandboxClient → container with Filesystem + Shell capabilities
+```
 
 ---
 
 ## Roadmap
 
-### 🔄 Current — Task Manager Agent (Multi-Agent Orchestrator)
+### 🔄 Current — Simple Agent CLI (No UI yet)
 
-Build the orchestrator agent that connects the user to the MCP tools:
+Build the Task Manager Agent as a CLI tool first — connect to MCP tools, test from terminal.
 
 | Step | What | Key Files |
 |------|------|-----------|
-| **1** | **Agent setup** — Create Task Manager Agent using OpenAI Agents SDK, connected to `task-mcp` server via `MCPServer` class (auto-discovers tools) | `agent.py` |
-| **2** | **FastAPI server** — Build `/chat` endpoint that accepts user messages and returns agent responses | `main.py` |
-| **3** | **End-to-end flow** — User → HTTP request → Agent → MCP tools → Response. Test the full chain. | Tests, docs |
+| **1** | **Agent setup** — Create `agent.py` with Simple `Agent` connected to `task-mcp` via `MCPServer` (auto-discovers 5 tools) | `services/task-manager-agent/src/agent.py` |
+| **2** | **CLI runner** — Update `main.py` to run agent from terminal: `uv run python -m task_manager_agent "Capture a task: Buy groceries"` | `services/task-manager-agent/src/main.py` |
+| **3** | **Test** — Start MCP server (Terminal 1), run agent CLI (Terminal 2), verify agent calls MCP tools correctly | Manual test |
 
 Architecture:
 ```
-User → POST /chat → FastAPI → Task Manager Agent (OpenAI SDK)
-                                        ↓
-                              MCP Client ←→ MCP Server (:8000)
-                                                ↓
-                                         InMemoryTaskStore
+Terminal: uv run python -m task_manager_agent "Create a task"
+                ↓
+        Task Manager Agent (Simple Agent)
+                ↓
+        MCP Client ←→ MCP Server (:8000)
+                          ↓
+                   InMemoryTaskStore
 ```
+
+### 🥈 Near Future — SandboxAgent Exploration
+
+| Step | What |
+|------|------|
+| **1** | Install `openai-agents[docker]` and set up `DockerSandboxClient` |
+| **2** | Build a SandboxAgent with `Filesystem` + `Shell` capabilities |
+| **3** | Connect SandboxAgent to our MCP tools alongside Simple Agent |
+| **4** | Save sandbox state with snapshots and resume across sessions |
 
 ### 📅 Future Phases (from `spec/mcp/roadmap/evolution-phases.md`)
 
@@ -221,7 +239,7 @@ User → POST /chat → FastAPI → Task Manager Agent (OpenAI SDK)
 | **Phase 2** | Database Persistence (SQLite → PostgreSQL) | Tasks survive restarts |
 | **Phase 3** | User Concept (owner field, scoped queries) | Multi-user support |
 | **Phase 4** | Auth Enforcement (API keys / JWT) | Secure access |
-| **Phase 5** | Kubernetes Deployment | Production scaling |
+| **Phase 5** | Kubernetes Deployment | SandboxAgent inside K8s pods, scaling |
 
 ---
 

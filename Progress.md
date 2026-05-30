@@ -46,30 +46,6 @@
 - [x] HEALTHCHECK for container health monitoring
 - [x] Image built, run, and verified — `docker build + docker run + curl tools/list` ✅
 
-## 🔄 Current: Task Manager Agent (Multi-Agent Orchestrator)
-
-### ✅ Done
-- [x] `services/task-manager-agent/` package structure created (moved from `src/task_manager_agent/`)
-- [x] `main.py` entry point ready
-- [x] Workspace configuration in `pyproject.toml`
-- [x] Dependencies: openai-agents, fastapi, uvicorn, pydantic
-- [x] **Studied OpenAI Agents SDK** — explored `Agent` vs `SandboxAgent` types, MCP integration, handoffs, guardrails
-- [x] **Documented agent comparison** in README.md — capabilities, requirements, and decision for our project
-
-### 📋 Planned Steps
-- [ ] **Step 1: Agent definition** — Create `agent.py` with Task Manager Agent (simple `Agent`) connected to `task-mcp` server via `MCPServer` (auto-discovers all 5 MCP tools)
-- [ ] **Step 2: CLI runner** — Update `main.py` to run the agent from terminal (no FastAPI yet)
-- [ ] **Step 3: Test** — Start MCP server + run agent CLI, verify agent calls MCP tools correctly
-
-### Architecture
-```
-User → POST /chat → FastAPI → Task Manager Agent (OpenAI SDK)
-                                        ↓
-                              MCP Client ←→ MCP Server (:8000)
-                                                ↓
-                                         InMemoryTaskStore
-```
-
 ## ✅ Milestone 6: Container Registry & CI/CD
 
 ### ✅ Done
@@ -78,6 +54,7 @@ User → POST /chat → FastAPI → Task Manager Agent (OpenAI SDK)
 - [x] Image pushed to GitHub Container Registry
 - [x] Image verified — pullable from `ghcr.io/asifalishaikh/task-manager-mcp:v0.1.0`
 - [x] CI/CD workflow created: `.github/workflows/task-mcp-ci.yml`
+- [x] CI/CD tested — path filtering works, build + push succeeds ✅
 
 ### CI/CD workflow details
 ```yaml
@@ -87,8 +64,61 @@ User → POST /chat → FastAPI → Task Manager Agent (OpenAI SDK)
 # Pushes to ghcr.io with tags: commit SHA, branch name
 ```
 
-### 📋 Planned: task-manager-agent CI/CD
-- [ ] Add CI/CD for `task-manager-agent` service (when that service has a Dockerfile)
+## ✅ Milestone 7: OpenAI Agents SDK Research
+
+- [x] Studied `Agent` (Simple Agent) — core building block with instructions, tools, MCP, handoffs, guardrails
+- [x] Studied `SandboxAgent` — extends Agent with workspace isolation, filesystem, shell, skills, memory, compaction
+- [x] Studied 3 sandbox clients: `UnixLocalSandboxClient`, `DockerSandboxClient`, and hosted providers
+- [x] Studied `Capabilities` — `Filesystem`, `Shell`, `Memory`, `Skills`, `Compaction`
+- [x] Studied `Manifest` — workspace entries (local dirs, git repos, string files, cloud mounts)
+- [x] Studied `DockerSandboxClient` — bridge between SandboxAgent and K8s (container isolation)
+- [x] **Decision documented** in README.md: Simple Agent now, SandboxAgent for K8s future
+
+### Architecture decision
+
+```
+Now (Simple Agent CLI):            Future (SandboxAgent + K8s):
+Terminal → Agent → MCP tools       K8s Pod
+                                       ├── Simple Agent (HTTP/MCP)
+                                       └── SandboxAgent (DockerSandboxClient)
+                                              ├── Filesystem capability
+                                              ├── Shell capability
+                                              └── Persistent snapshots
+```
+
+## 🔄 Current: Build Simple Agent CLI
+
+### ✅ Done
+- [x] `services/task-manager-agent/` package structure created
+- [x] `main.py` entry point ready
+- [x] Workspace configuration in `pyproject.toml`
+- [x] Dependencies: openai-agents, fastapi, uvicorn, pydantic
+
+### 📋 Planned Steps
+- [ ] **Step 1: Agent definition** — Create `agent.py` with Simple `Agent` connected to `task-mcp` via `MCPServer` (auto-discovers 5 MCP tools)
+- [ ] **Step 2: CLI runner** — Update `main.py` so user runs: `uv run python -m task_manager_agent "your request"`
+- [ ] **Step 3: Test** — Start MCP server (Terminal 1) + run agent CLI (Terminal 2), verify agent calls MCP tools
+
+### Architecture
+```
+Terminal: uv run python -m task_manager_agent "Capture a task: Buy groceries"
+                ↓
+        Simple Agent (OpenAI Agents SDK)
+                ↓
+        MCP Client ←→ MCP Server (:8000)
+                          ↓
+                   InMemoryTaskStore
+```
+
+## 📅 Planned — SandboxAgent Exploration (Next after CLI)
+
+- [ ] Install `openai-agents[docker]` and configure `DockerSandboxClient`
+- [ ] Build SandboxAgent with `Filesystem` + `Shell` capabilities
+- [ ] Connect SandboxAgent to MCP tools alongside Simple Agent
+- [ ] Test snapshot/session resume across runs
+- [ ] Add CI/CD for `task-manager-agent` service (after Dockerfile exists)
+
+## 📅 Planned — Future Phases
 
 ### Phase 2: Database Persistence
 - [ ] Swap `InMemoryTaskStore` with `DatabaseTaskStore` (same interface)
@@ -108,5 +138,6 @@ User → POST /chat → FastAPI → Task Manager Agent (OpenAI SDK)
 
 ### Phase 5: Kubernetes Deployment
 - [ ] `Deployments/k8s/` manifests (Deployment, Service, ConfigMap, HPA)
+- [ ] SandboxAgent inside K8s pods with `DockerSandboxClient` (sidecar pattern)
 - [ ] `Deployments/helm/` charts for multi-environment
-- [ ] CI/CD with GitHub Actions → ghcr.io → K8s          
+- [ ] CI/CD with GitHub Actions → ghcr.io → K8s
