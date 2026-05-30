@@ -53,11 +53,13 @@
 - [x] `main.py` entry point ready
 - [x] Workspace configuration in `pyproject.toml`
 - [x] Dependencies: openai-agents, fastapi, uvicorn, pydantic
+- [x] **Studied OpenAI Agents SDK** — explored `Agent` vs `SandboxAgent` types, MCP integration, handoffs, guardrails
+- [x] **Documented agent comparison** in README.md — capabilities, requirements, and decision for our project
 
 ### 📋 Planned Steps
-- [ ] **Step 1: Agent definition** — Create `agent.py` with Task Manager Agent using OpenAI Agents SDK, connected to `task-mcp` server via `MCPServer` (auto-discovers all 5 MCP tools)
-- [ ] **Step 2: FastAPI server** — Rewrite `main.py` with `/chat` endpoint that accepts user messages, runs the agent, and returns responses
-- [ ] **Step 3: End-to-end test** — Start MCP server + agent server, send a request, verify agent calls MCP tools correctly
+- [ ] **Step 1: Agent definition** — Create `agent.py` with Task Manager Agent (simple `Agent`) connected to `task-mcp` server via `MCPServer` (auto-discovers all 5 MCP tools)
+- [ ] **Step 2: CLI runner** — Update `main.py` to run the agent from terminal (no FastAPI yet)
+- [ ] **Step 3: Test** — Start MCP server + run agent CLI, verify agent calls MCP tools correctly
 
 ### Architecture
 ```

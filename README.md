@@ -108,43 +108,91 @@ docker pull ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp:master
 
 ## Run Method Comparison: Python/uv vs Docker
 
-You can run the MCP server two ways — here's how they compare:
+| | **Local (uv + Python)** | **Docker** |
+|---|---|---|
+| **Command** | `cd services/task-mcp && uv run python -m task_manager_mcp` | `docker run -p 8000:8000 task-mcp:latest` |
+| **Pre-requisite** | Python 3.12 + uv installed | Docker installed |
+| **Build step** | None - run directly from source | `docker build` required first |
+| **Isolation** | Uses system Python, shared env | Fully isolated container |
+| **Health checks** | None | Built-in HEALTHCHECK |
+| **User** | Runs as your user | Non-root user (security) |
+| **Best for** | Development, quick iteration | Production, CI/CD, K8s deployment |
 
+---
 
-  Run Method Comparison — side-by-side table of uv run python vs docker run:
+## Agent Types: Agent vs SandboxAgent
 
-  ┌───────────────┬───────────────────────────────────┬─────────────────────────────────────────┐
-  │               │        Local (uv + Python)        │                 Docker                  │
-  ├───────────────┼───────────────────────────────────┼─────────────────────────────────────────┤
-  │ Command       │ uv run python -m task_manager_mcp │ docker run -p 8000:8000 task-mcp:latest │
-  ├───────────────┼───────────────────────────────────┼─────────────────────────────────────────┤
-  │ Pre-requisite │ Python 3.12 + uv                  │ Docker only                             │
-  ├───────────────┼───────────────────────────────────┼─────────────────────────────────────────┤
-  │ Build step    │ None      run directly from source│ docker build required first             │
-  ├───────────────┼───────────────────────────────────┼─────────────────────────────────────────┤
-  │ Isolation     │ Uses System Python, shared env    │ Fully isolated evnviornment             │
-  └───────────────┴───────────────────────────────────┴─────────────────────────────────────────┘
-  │ Best for      │ Development                       │ Production / CI/CD                      │
-  └───────────────┴───────────────────────────────────┴─────────────────────────────────────────┘
+The OpenAI Agents SDK provides two types of agents. Here's how they compare:
 
+### Agent (Simple Agent)
+The core building block - an LLM configured with instructions, tools, and optional runtime behavior.
 
+```python
+from agents import Agent, MCPServer
 
-  ┌───────────────────────────────────┬────────────────────────────────────────────┐
-  │          Without Docker           │                With Docker                 │
-  ├───────────────────────────────────┼────────────────────────────────────────────┤
-  │ Need Python 3.12 + uv installed   │ Just need Docker                           │
-  ├───────────────────────────────────┼────────────────────────────────────────────┤
-  │ uv run python -m task_manager_mcp │ docker run -p 8000:8000 task-mcp:latest    │
-  ├───────────────────────────────────┼────────────────────────────────────────────┤
-  │ Only runs on your machine         │ Runs anywhere (your laptop, a server, K8s) │
-  ├───────────────────────────────────┼────────────────────────────────────────────┤
-  │ No health checks                  │ Built-in HEALTHCHECK                       │
-  ├───────────────────────────────────┼────────────────────────────────────────────┤
-  │ Runs as root                      │ Runs as non-root user (security)           │
----   
- The multi-stage part means it builds in two steps:
-  1. builder stage — Installs all dependencies + compiles code (bigger image, all build tools)
-  2. runtime stage — Copies only the final app into a clean, minimal Python image (smaller, safer)
+agent = Agent(
+    name="Task Manager",
+    instructions="You manage tasks using MCP tools.",
+    mcp_servers=[MCPServer(url="http://localhost:8000/mcp")]
+)
+```
+
+**What it can do:** Think, call APIs/functions, use MCP tools, hand off to other agents.
+
+### SandboxAgent
+Extends Agent with workspace isolation, filesystem access, shell commands, and skills.
+
+```python
+from agents.sandbox import SandboxAgent, Manifest, SandboxRunConfig
+from agents.sandbox.capabilities import Capabilities, Filesystem, Shell
+
+agent = SandboxAgent(
+    name="Sandbox engineer",
+    instructions="Read repo, edit files, run commands.",
+    default_manifest=Manifest(entries={...}),
+    capabilities=Capabilities.default() + [Filesystem(), Shell()]
+)
+```
+
+**What it can do:** All of Agent + edit files, run shell commands, manage code repos.
+
+### Side-by-side comparison
+
+| Capability | Agent | SandboxAgent |
+|---|---|---|
+| LLM reasoning + tools | Yes | Yes |
+| Function / MCP tools | Yes | Yes |
+| Handoffs to other agents | Yes | Yes |
+| Guardrails and structured output | Yes | Yes |
+| Streaming and lifecycle hooks | Yes | Yes |
+| **Filesystem access** | No | Yes (Filesystem) |
+| **Shell commands** | No | Yes (Shell) |
+| **Code editing** | No | Yes (apply_patch) |
+| **Skills / guides** | No | Yes (Skills) |
+| **Persistent workspace** | No | Yes (Manifest) |
+| **Session snapshots** | No | Yes (SandboxSession) |
+
+### Requirements
+
+| Requirement | Agent | SandboxAgent |
+|---|---|---|
+| Python | 3.9+ | 3.10+ |
+| Extra install | None | openai-agents[docker] (optional) |
+| Sandbox client | None | UnixLocalSandboxClient or DockerSandboxClient |
+| OS | All | Unix or Docker |
+
+### Decision for this project
+
+| Need | Required? | Agent choice |
+|---|---|---|
+| Call MCP tools (capture, review, modify, resolve, remove) | Yes | Both work |
+| Edit files / run commands | No | Agent is enough |
+| Isolated workspace | No | Agent is enough |
+
+**We use Agent** - our Task Manager Agent only needs to call MCP tools and return responses. SandboxAgent adds complexity (Docker client, manifests, capabilities) with no benefit for our current use case.
+
+---
+
 ## Roadmap
 
 ### 🔄 Current — Task Manager Agent (Multi-Agent Orchestrator)
