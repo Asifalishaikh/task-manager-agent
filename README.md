@@ -1,25 +1,143 @@
-# Task Manager Agent
+﻿# Task Manager Agent
 
 A multi-agent task management system using OpenAI Agents SDK and FastAPI.
 
-## Architecture Diagram
+## Project Overview
 
-The system architecture is designed using [Excalidraw](https://excalidraw.com).
+An end-to-end task management system built in progressive milestones:
 
-📐 **[View the architecture diagram →](docs/architecture.excalidraw)**
+| # | Milestone | Status | What |
+|---|-----------|--------|------|
+| 1 | **MCP Server** | ✅ Complete | 5 intent-based tools (capture, review, modify, resolve, remove) with in-memory storage |
+| 2 | **Docker + CI/CD** | ✅ Complete | Multi-stage Docker image auto-built on push to `ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp` |
+| 3 | **Agent SDK Research** | ✅ Complete | Studied `Agent` vs `SandboxAgent` — documented in ADR and spec |
+| 4 | **SandboxAgent** | 🚧 Built / Untested | Docker-backed agent with Filesystem + Shell capabilities + MCP tools |
+| 5 | **Simple Agent CLI** | 🔜 Next | Connect user via CLI → Simple Agent → MCP tools → Response |
+| 6 | **Kubernetes** | 📅 Future | SandboxAgent inside K8s pods with DockerSandboxClient |
 
-To open it:
-1. Go to [excalidraw.com](https://excalidraw.com)
-2. Click **Open** → **Open file**
-3. Select `docs/architecture.excalidraw`
-4. Edit and re-export as needed
+## System Architecture
+
+### Current State
+
+```
+Terminal / Claude Code
+       │
+       ├── MCP Protocol ────────► MCP Server (:8000) ──► InMemoryTaskStore
+       │                            (task-manager-mcp)
+       │
+       ├── GitHub Actions ──────► Docker Build ──► ghcr.io (CI/CD)
+       │
+       └── SandboxAgent ────────► DockerSandboxClient ──► Docker Container
+                                    (Filesystem + Shell + MCP tools)
+```
+
+### Future State
+
+```
+User ──► CLI / API
+            │
+            ▼
+    Simple Agent (Agent + MCPServer)
+            │
+            ├──► MCP Server (:8000) ──► Task Store
+            │
+            └──► SandboxAgent ──► DockerSandboxClient ──► Container
+                                    (Filesystem, Shell, Skills, Memory)
+
+K8s Pod:
+    ├── Simple Agent (HTTP server)
+    └── SandboxAgent (sidecar) ──► DockerSandboxClient
+```
+
+### Decision Path
+
+```
+OpenAI Agents SDK
+    ├── Agent (Simple Agent) ── "Use now" ── CLI, MCP calls, task CRUD
+    └── SandboxAgent          ── "Use later" ── Filesystem, Shell, K8s
+            └── DockerSandboxClient ── Container isolation ──► K8s
+```
+
+---
+
+## Project Milestones
+
+### ✅ Milestone 1: MCP Server (5 Intent-Based Tools)
+Implement an MCP server with CRUD tools for task management, all in-memory.
+
+| Tool | Description | File |
+|------|-------------|------|
+| `capture_task` | Create a new task | `services/task-mcp/src/task_manager_mcp/tools/capture.py` |
+| `review_task` | List / search / filter tasks | `services/task-mcp/src/task_manager_mcp/tools/review.py` |
+| `modify_task` | Update task fields | `services/task-mcp/src/task_manager_mcp/tools/modify.py` |
+| `resolve_task` | Mark task completed | `services/task-mcp/src/task_manager_mcp/tools/resolve.py` |
+| `remove_task` | Delete task permanently | `services/task-mcp/src/task_manager_mcp/tools/remove.py` |
+
+**Docs:** `spec/mcp/` — transport, tools, implementation plan, testing, roadmap
+
+---
+
+### ✅ Milestone 2: Multi-Stage Docker Build + CI/CD
+Containerize and automate the MCP server deployment.
+
+| Area | Detail |
+|------|--------|
+| **Dockerfile** | Multi-stage (builder + runtime), non-root user, HEALTHCHECK |
+| **Registry** | `ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp` |
+| **CI/CD** | `.github/workflows/task-mcp-ci.yml` — auto-build on `services/task-mcp/**` changes |
+| **Verified** | Image built, container run, `tools/list` returns 5 tools ✅ |
+
+**Run comparison:**
+| | Local (uv) | Docker |
+|---|---|---|
+| Command | `uv run python -m task_manager_mcp` | `docker run -p 8000:8000 task-mcp:latest` |
+| Best for | Development | Production / CI/CD |
+
+---
+
+### ✅ Milestone 3: OpenAI Agents SDK Research
+Deep-dive study of the SDK to decide agent architecture.
+
+| Area | Finding | Doc |
+|------|---------|-----|
+| **Agent types** | `Agent` (Simple) vs `SandboxAgent` | `docs/adrs/agent-decision.md` |
+| **Decision** | Simple Agent now, SandboxAgent for K8s | ADR-001 |
+| **Sandbox clients** | `UnixLocalSandboxClient`, `DockerSandboxClient`, hosted | `spec/agents/sandbox-agent-spec.md` |
+| **Capabilities** | `Filesystem`, `Shell`, `Memory`, `Skills`, `Compaction` | SDK docs |
+
+---
+
+### ✅ Milestone 4: SandboxAgent Prototype
+Docker-backed SandboxAgent combining MCP tools + filesystem + shell.
+
+| Component | Detail |
+|-----------|--------|
+| **Agent** | `SandboxAgent` with `Filesystem` + `Shell` capabilities |
+| **Client** | `DockerSandboxClient` for container isolation |
+| **MCP** | Connects to MCP server via `host.docker.internal:8000/mcp` |
+| **Manifest** | Mounts project files, creates scratch workspace |
+| **File** | `services/task-manager-agent/src/task_manager_agent/sandbox_agent.py` |
+
+---
+
+### 🔜 Next: Simple Agent CLI
+Build a CLI agent that call MCP tools via OpenAI SDK's `Agent` + `MCPServer`.
+
+**Plan:** `agent.py` → CLI runner `main.py` → End-to-end test
+
+### 📅 Future: Database, Auth, K8s
+See `spec/mcp/roadmap/evolution-phases.md` for full roadmap.
+
+---
 
 ## Project Setup
 
 - **Python:** 3.12.2
 - **Package Manager:** [uv](https://docs.astral.sh/uv/)
-- **Agent Framework:** OpenAI Agents SDK
+- **Agent Framework:** OpenAI Agents SDK v0.15.1
 - **API:** FastAPI + Uvicorn
+- **Container Registry:** ghcr.io (GitHub Container Registry)
+- **CI/CD:** GitHub Actions (path-filtered per service)
 - **Deployment Target:** Kubernetes (K8s)
 - **Multi-stage Dockerfile:** `services/task-mcp/Dockerfile` (builder + runtime stages, non-root user, HEALTHCHECK)
 - **Added MCP from skills.sh:** `npx skills add https://github.com/anthropics/skills --skill mcp-builder` (manual)
@@ -34,9 +152,10 @@ uv run python -m task_manager_mcp
 ```
 
 ### 2. Test MCP Tools (Terminal 2):
-Open a **new terminal** and ask Claude Code (or any MCP client connected to the server):
-
-> *"List all the MCP tools available to you?"*
+```bash
+# Ask Claude Code connected to the MCP server:
+"List all the MCP tools available to you?"
+```
 
 You should see the 5 intent-based tools:
 | Tool | Purpose |
@@ -202,37 +321,43 @@ K8s Pod
 
 ## Roadmap
 
-### 🔄 Current — Simple Agent CLI (No UI yet)
+### 🔜 Current — Simple Agent CLI
 
-Build the Task Manager Agent as a CLI tool first — connect to MCP tools, test from terminal.
+Build a CLI agent that calls MCP tools via OpenAI SDK's `Agent` + `MCPServer`.
 
 | Step | What | Key Files |
 |------|------|-----------|
-| **1** | **Agent setup** — Create `agent.py` with Simple `Agent` connected to `task-mcp` via `MCPServer` (auto-discovers 5 tools) | `services/task-manager-agent/src/agent.py` |
-| **2** | **CLI runner** — Update `main.py` to run agent from terminal: `uv run python -m task_manager_agent "Capture a task: Buy groceries"` | `services/task-manager-agent/src/main.py` |
-| **3** | **Test** — Start MCP server (Terminal 1), run agent CLI (Terminal 2), verify agent calls MCP tools correctly | Manual test |
+| **1** | **Agent definition** — Simple `Agent` connected to `task-mcp` via `MCPServer` (auto-discovers 5 MCP tools) | `services/task-manager-agent/src/agent.py` |
+| **2** | **CLI runner** — `uv run python -m task_manager_agent "Create a task: Buy groceries"` | `services/task-manager-agent/src/main.py` |
+| **3** | **End-to-end test** — MCP server + agent CLI, verify tool calls | Manual test |
 
 Architecture:
 ```
 Terminal: uv run python -m task_manager_agent "Create a task"
                 ↓
-        Task Manager Agent (Simple Agent)
+        Simple Agent (Agent + MCPServer)
                 ↓
         MCP Client ←→ MCP Server (:8000)
                           ↓
                    InMemoryTaskStore
 ```
 
-### 🥈 Near Future — SandboxAgent Exploration
+### ✅ Done — SandboxAgent (Code Ready, Untested)
 
-| Step | What |
-|------|------|
-| **1** | Install `openai-agents[docker]` and set up `DockerSandboxClient` |
-| **2** | Build a SandboxAgent with `Filesystem` + `Shell` capabilities |
-| **3** | Connect SandboxAgent to our MCP tools alongside Simple Agent |
-| **4** | Save sandbox state with snapshots and resume across sessions |
+The SandboxAgent is already written — Docker-backed with Filesystem + Shell + MCP.
 
-### 📅 Future Phases (from `spec/mcp/roadmap/evolution-phases.md`)
+| File | Purpose |
+|------|---------|
+| `sandbox_agent.py` | `SandboxAgent` with `DockerSandboxClient`, manifest, instruction |
+| `pyproject.toml` | Optional dep `[sandbox]` = `openai-agents[docker]` |
+
+**To test when Docker is running:**
+```bash
+uv sync --extra sandbox
+uv run python -m task_manager_agent.sandbox_agent "Read README.md and create a task"
+```
+
+### 📅 Future Phases
 
 | Phase | What | Why |
 |-------|------|-----|
