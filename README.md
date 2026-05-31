@@ -130,6 +130,18 @@ See `spec/mcp/roadmap/evolution-phases.md` for full roadmap.
 
 ---
 
+## Key Documents
+
+| File | Purpose |
+|------|---------|
+| **`Progress.md`** | Task-level milestone tracking — checkboxes for every item built |
+| **`docs/adrs/agent-decision.md`** | Architecture Decision Record — why Simple Agent vs SandboxAgent |
+| **`spec/mcp/`** | MCP server specifications — transport, tools, implementation plan, testing, roadmap |
+| **`spec/agents/sandbox-agent-spec.md`** | SandboxAgent specification — architecture, capabilities, Docker client, CLI usage |
+| **`AGENTS.md`** | Agent workflow documentation — creator workflow, verification, TDD standards |
+
+---
+
 ## Project Setup
 
 - **Python:** 3.12.2
