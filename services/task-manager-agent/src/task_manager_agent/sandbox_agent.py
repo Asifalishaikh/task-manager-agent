@@ -81,10 +81,7 @@ def build_agent(manifest):
         ),
         mcp_servers=[mcp_server],
         default_manifest=manifest,
-        capabilities=Capabilities.default() + [
-            Filesystem(),
-            Shell(),
-        ],
+        capabilities=Capabilities.default(),  # Filesystem + Shell + Compaction
     )
 
 
