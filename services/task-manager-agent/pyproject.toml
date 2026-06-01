@@ -14,6 +14,7 @@ dependencies = [
 
 [project.optional-dependencies]
 sandbox = ["openai-agents[docker]"]
+litellm = ["openai-agents[litellm]"]
 
 [build-system]
 requires = ["hatchling"]

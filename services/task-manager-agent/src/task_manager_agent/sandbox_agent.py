@@ -5,6 +5,8 @@ Runs inside a Docker container with:
   - Filesystem access (read, write, edit files)
   - Shell access (run commands, execute scripts)
   - MCP tools (capture, review, modify, resolve, remove tasks)
+  - Gemini 3.1 Flash-Lite model via LiteLLM
+  - OpenAI for tracing only (optional)
 
 Usage:
   # Start MCP server first (Terminal 1):
@@ -16,7 +18,8 @@ Usage:
 Requirements:
   - Docker Desktop running
   - pip install openai-agents[docker]
-  - OPENAI_API_KEY set in .env file
+  - GEMINI_API_KEY set in .env file (for agent calls)
+  - OPENAI_API_KEY set in .env file (optional, for tracing only)
 """
 
 import asyncio
@@ -31,17 +34,21 @@ from agents import MCPServer, Runner
 from agents.run import RunConfig
 from agents.sandbox import SandboxAgent, SandboxRunConfig, Manifest
 from agents.sandbox.entries import LocalDir, StringEntry
-from agents.sandbox.capabilities import Capabilities, Filesystem, Shell
+from agents.sandbox.capabilities import Capabilities
 from agents.sandbox.sandboxes.docker import (
     DockerSandboxClient,
     DockerSandboxClientOptions,
 )
 from agents.sandbox.config import DEFAULT_PYTHON_SANDBOX_IMAGE
+from agents.extensions.models.litellm_provider import LitellmProvider
 
 load_dotenv()
 
 # Use host.docker.internal so the container can reach the host's MCP server
 MCP_SERVER_URL = "http://host.docker.internal:8000/mcp"
+
+# Gemini model via LiteLLM (prefix with "gemini/")
+MODEL_NAME = "gemini/gemini-3.1-flash-lite"
 
 
 def build_manifest():
@@ -82,12 +89,13 @@ def build_agent(manifest):
         mcp_servers=[mcp_server],
         default_manifest=manifest,
         capabilities=Capabilities.default(),  # Filesystem + Shell + Compaction
+        model=MODEL_NAME,
     )
 
 
 async def main():
-    if not os.getenv("OPENAI_API_KEY"):
-        print("❌ OPENAI_API_KEY not found. Create a .env file with OPENAI_API_KEY=sk-...")
+    if not os.getenv("GEMINI_API_KEY"):
+        print("❌ GEMINI_API_KEY not found. Create a .env file with GEMINI_API_KEY=your-key")
         sys.exit(1)
 
     if len(sys.argv) < 2:
@@ -98,6 +106,11 @@ async def main():
     prompt = " ".join(sys.argv[1:])
 
     print("\n=== SandboxAgent ===")
+    print(f"Model: {MODEL_NAME}")
+    if os.getenv("OPENAI_API_KEY"):
+        print("Tracing: OpenAI (enabled)")
+    else:
+        print("Tracing: disabled (no OPENAI_API_KEY)")
     print(f"Prompt: {prompt}\n")
 
     # Build manifest + agent
@@ -122,6 +135,7 @@ async def main():
                 prompt,
                 run_config=RunConfig(
                     sandbox=SandboxRunConfig(session=sandbox),
+                    model_provider=LitellmProvider(),
                     workflow_name="Sandbox Agent",
                 ),
             )
