@@ -11,9 +11,8 @@ An end-to-end task management system built in progressive milestones:
 | 1 | **MCP Server** | ✅ Complete | 5 intent-based tools (capture, review, modify, resolve, remove) with in-memory storage |
 | 2 | **Docker + CI/CD** | ✅ Complete | Multi-stage Docker image auto-built on push to `ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp` |
 | 3 | **Agent SDK Research** | ✅ Complete | Studied `Agent` vs `SandboxAgent` — documented in ADR and spec |
-| 4 | **SandboxAgent** | 🚧 Built / Untested | Docker-backed agent with Filesystem + Shell capabilities + MCP tools |
-| 5 | **Simple Agent CLI** | 🔜 Next | Connect user via CLI → Simple Agent → MCP tools → Response |
-| 6 | **Kubernetes** | 📅 Future | SandboxAgent inside K8s pods with DockerSandboxClient |
+| 4 | **Agent Testing** | ✅ Complete | Simple Agent (Gemini + MCP) tested. SandboxAgent (Docker + MCP + Gemini) tested. See test scripts below. |
+| 5 | **Kubernetes** | 📅 Future | SandboxAgent inside K8s pods with DockerSandboxClient |
 
 ## System Architecture
 
@@ -107,16 +106,29 @@ Deep-dive study of the SDK to decide agent architecture.
 
 ---
 
-### ✅ Milestone 4: SandboxAgent Prototype
-Docker-backed SandboxAgent combining MCP tools + filesystem + shell.
+### ✅ Milestone 4: Agent Testing & Validation
+All agents tested end-to-end with Gemini 3.1 Flash-Lite + LiteLLM.
 
-| Component | Detail |
-|-----------|--------|
-| **Agent** | `SandboxAgent` with `Filesystem` + `Shell` capabilities |
-| **Client** | `DockerSandboxClient` for container isolation |
-| **MCP** | Connects to MCP server via `host.docker.internal:8000/mcp` |
-| **Manifest** | Mounts project files, creates scratch workspace |
-| **File** | `services/task-manager-agent/src/task_manager_agent/sandbox_agent.py` |
+| Test | Script | Result |
+|------|--------|--------|
+| **Hello Gemini** | `hello_gemini.py` | ✅ Gemini responds to prompts |
+| **Simple Agent + MCP** | `test_mcp.py` | ✅ List tools, create task, review task all work |
+| **SandboxAgent + Docker + MCP** | `sandbox_agent.py` | ✅ Docker container starts, MCP tools work, task created |
+
+### Test Scripts
+```bash
+# Step 1: Test Gemini
+uv run python -m task_manager_agent.hello_gemini
+
+# Step 2: Test Simple Agent with MCP (MCP server must be running)
+uv run python -m task_manager_agent.test_mcp
+
+# Step 3: Test SandboxAgent with Docker (Docker + MCP server must be running)
+uv run python -m task_manager_agent.sandbox_agent "Create a task"
+```
+
+### Known Limitation
+Sandbox built-in capabilities (Filesystem, Shell) require **OpenAI Responses API** — they don't work with Gemini via LiteLLM (uses ChatCompletions). MCP tools work with both.
 
 ---
 
