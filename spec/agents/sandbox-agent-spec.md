@@ -87,20 +87,18 @@ SandboxAgent (OpenAI SDK)
 | `instructions` | See section 2.2 | System prompt with tool instructions |
 | `mcp_servers` | `[MCPServer(url=...)]` | Connection to task-mcp server on host |
 | `default_manifest` | See section 3 | Files available in sandbox workspace |
-| `capabilities` | `[Filesystem(), Shell()]` | Sandbox-native tools |
-| `model` | Default (gpt-4o) | OpenAI model - configurable via env |
+| `capabilities` | See §4.3 | Depends on model — empty `[]` for ChatCompletions models (Gemini) |
+| `model` | Default (gpt-4o) | Can use Gemini via `gemini/gemini-3.1-flash-lite` with LiteLLM |
 
 ### 2.2 Instructions (System Prompt)
 
 ```
-You are a task management agent with filesystem and shell access.
+You are a task management agent.
 
 You can:
 1. Use MCP tools (capture_task, review_task, modify_task, resolve_task, remove_task)
-2. Read and write files using Filesystem capability
-3. Run shell commands using Shell capability
 
-When a user asks you to create tasks from files:
+When a user asks you to create tasks:
   - Read the file using Filesystem
   - Extract task information
   - Call capture_task for each task found
@@ -109,13 +107,24 @@ When a user asks you to create tasks from files:
 
 ### 2.3 MCP Server Connection
 
+```python
+from agents.mcp.server import MCPServerStreamableHttp, MCPServerStreamableHttpParams
+
+mcp_server = MCPServerStreamableHttp(
+    params=MCPServerStreamableHttpParams(url=MCP_SERVER_URL)
+)
+await mcp_server.connect()  # Required before Runner.run()
+```
+
 | Property | Value |
 |----------|-------|
-| URL | `http://host.docker.internal:8000/mcp` |
+| Class | `MCPServerStreamableHttp` (not `MCPServer` — that's abstract) |
+| URL | `http://localhost:8000/mcp` (host) or `http://host.docker.internal:8000/mcp` (Docker) |
 | Transport | Streamable HTTP |
+| `.connect()` required | Yes — must call before passing to agent |
 | Auto-discovered tools | `capture_task`, `review_task`, `modify_task`, `resolve_task`, `remove_task` |
 
-The URL uses `host.docker.internal` because the SandboxAgent runs inside a Docker container and needs to reach the MCP server running on the host machine.
+The URL uses `host.docker.internal` when the agent runs inside a Docker container (SandboxAgent) and needs to reach the MCP server on the host. Use `localhost` when the agent runs directly on the host.
 
 ---
 
@@ -134,11 +143,14 @@ The URL uses `host.docker.internal` because the SandboxAgent runs inside a Docke
 | Type | When to use |
 |------|-------------|
 | `LocalDir` | Mount a local directory into sandbox |
-| `StringEntry` | Create a file with string content |
+| `LocalFile` | Mount a single local file into sandbox |
+| `File` | Create a file with bytes content (replaces legacy `StringEntry`) |
 | `GitRepo` | Clone a git repository into sandbox |
 | `S3Mount` | Mount S3 bucket (with mount strategy) |
 | `GCSMount` | Mount GCS bucket |
 | `R2Mount` | Mount Cloudflare R2 bucket |
+
+**Note:** Use `File(content=b"...")` for in-memory files. `StringEntry` was removed in SDK v0.15+.
 
 ---
 
@@ -168,6 +180,17 @@ The URL uses `host.docker.internal` because the SandboxAgent runs inside a Docke
 | `Skills` | Load workflow guides | When agent needs project-specific training |
 | `Memory` | Persist learnings across sessions | When agent repeats mistakes |
 | `Compaction` | Summarize long sessions | When context window fills up |
+
+### 4.4 Model Limitation
+
+Sandbox capabilities (`Filesystem`, `Shell`, `Compaction`) require **OpenAI's Responses API**.
+
+| Model Provider | API | Sandbox capabilities work? |
+|---------------|-----|---------------------------|
+| OpenAI (gpt-4o, etc.) | Responses API | ✅ Full support |
+| Gemini via LiteLLM | ChatCompletions | ❌ Not supported |
+
+**Workaround with Gemini:** Set `capabilities=[]` to disable sandbox tools. MCP tools still work independently. Filesystem and Shell can be replaced by running a separate Simple Agent alongside.
 
 ---
 
@@ -329,6 +352,21 @@ Simple Agent (task manager CLI)
 - [ ] Add auth between SandboxAgent and MCP server
 - [ ] Switch to hosted sandbox client (Modal, E2B) for scaling
 - [ ] Deploy as K8s sidecar alongside Simple Agent
+
+---
+
+## 10a. Technical Notes from Testing (June 2026)
+
+| Finding | Detail |
+|---------|--------|
+| **`MCPServer` is abstract** | Use `MCPServerStreamableHttp` for Streamable HTTP transport |
+| **`connect()` required** | Call `await mcp_server.connect()` before `Runner.run()` |
+| **`StringEntry` removed** | Use `File(content=b"...")` instead |
+| **`Capabilities.default()`** | Already returns `[Filesystem(), Shell(), Compaction()]` — do not add duplicates |
+| **`max_turns` default** | Default `10` — Sandbox + MCP agents need `max_turns=30` |
+| **Cleanup pattern** | Use `async with sandbox:` — no explicit `close()` needed |
+| **Gemini + Sandbox caps** | Filesystem/Shell require OpenAI Responses API, not ChatCompletions |
+| **Large `LocalDir` mounts** | Directories with many files (e.g., `services/`) may fail to write to Docker sandbox archive |
 
 ---
 

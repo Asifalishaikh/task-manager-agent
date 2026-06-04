@@ -38,7 +38,7 @@
 - [x] Skills for workflow automation
 - [x] TDD & engineering standards documented
 
-## ✅ Milestone 5: Multi-Stage Docker Build
+ ## ✅ Milestone 5: Multi-Stage Docker Build
 - [x] `services/task-mcp/Dockerfile` — multi-stage build (builder + runtime)
 - [x] `services/task-mcp/.dockerignore` — excludes venv, pycache, IDE, git
 - [x] `services/task-mcp/README.md` — Docker quick start, build, run, verify docs
@@ -87,37 +87,50 @@ Terminal → Agent → MCP tools       K8s Pod
                                               └── Persistent snapshots
 ```
 
-## 🔄 Current: Build Simple Agent CLI
+## ✅ Milestone 8: Agent Testing & Validation
+
+### ✅ Tested: Step 1 — Hello Gemini (`hello_gemini.py`)
+- Simple Agent with Gemini 3.1 Flash-Lite via LiteLLM
+- Tested standalone — Gemini responds correctly ✅
+
+### ✅ Tested: Step 2 — Simple Agent + MCP (`test_mcp.py`)
+- Simple Agent with `MCPServerStreamableHttp` connecting to MCP server
+- **List tools** ✅ — Gemini listed all 5 tools
+- **Create task** ✅ — "Test task from Gemini" created
+- **Review tasks** ✅ — Task found and displayed
+
+### ✅ Tested: Step 3 — SandboxAgent + Docker + MCP (`sandbox_agent.py`)
+- DockerSandboxClient creates isolated container ✅
+- MCP tools work through Gemini ✅
+- **Create task via SandboxAgent** ✅ — "Sandbox Test Final" created and verified
+- **Filesystem/Shell capabilities** ❌ — Require OpenAI Responses API (not available with Gemini)
+
+### 🔬 Key Findings
+| Finding | Detail |
+|---------|--------|
+| `MCPServer` is abstract | Use `MCPServerStreamableHttp` for Streamable HTTP |
+| `connect()` required before `Runner.run()` | Must call `await mcp_server.connect()` |
+| `StringEntry` → `File` | SDK renamed, use `File(content=b"...")` |
+| `Capabilities.default()` | Already includes Filesystem, Shell, Compaction |
+| `max_turns` | Default 10 insufficient — use 30 for MCP agents |
+| Gemini + sandbox capabilities | Filesystem/Shell need OpenAI Responses API |
+
+## 🔄 Current: Clean Up & Next
 
 ### ✅ Done
-- [x] `services/task-manager-agent/` package structure created
-- [x] `main.py` entry point ready
-- [x] Workspace configuration in `pyproject.toml`
-- [x] Dependencies: openai-agents, fastapi, uvicorn, pydantic
+- [x] All agent types researched and documented (ADR, Spec)
+- [x] Simple Agent (Gemini + MCP) — tested and working
+- [x] SandboxAgent (Docker + MCP + Gemini) — tested and working
+- [x] `hello_gemini.py` — Step 1 test file
+- [x] `test_mcp.py` — Step 2 test file  
+- [x] `sandbox_agent.py` — Step 3 SandboxAgent implementation
+- [x] CI/CD for task-mcp image (ghcr.io, auto-build on push)
 
-### 📋 Planned Steps
-- [ ] **Step 1: Agent definition** — Create `agent.py` with Simple `Agent` connected to `task-mcp` via `MCPServer` (auto-discovers 5 MCP tools)
-- [ ] **Step 2: CLI runner** — Update `main.py` so user runs: `uv run python -m task_manager_agent "your request"`
-- [ ] **Step 3: Test** — Start MCP server (Terminal 1) + run agent CLI (Terminal 2), verify agent calls MCP tools
-
-### Architecture
-```
-Terminal: uv run python -m task_manager_agent "Capture a task: Buy groceries"
-                ↓
-        Simple Agent (OpenAI Agents SDK)
-                ↓
-        MCP Client ←→ MCP Server (:8000)
-                          ↓
-                   InMemoryTaskStore
-```
-
-## 📅 Planned — SandboxAgent Exploration (Next after CLI)
-
-- [ ] Install `openai-agents[docker]` and configure `DockerSandboxClient`
-- [ ] Build SandboxAgent with `Filesystem` + `Shell` capabilities
-- [ ] Connect SandboxAgent to MCP tools alongside Simple Agent
-- [ ] Test snapshot/session resume across runs
-- [ ] Add CI/CD for `task-manager-agent` service (after Dockerfile exists)
+### 📋 Road Ahead
+- [ ] **Phase 2: SQLite Database** — Swap InMemoryTaskStore for persistence
+- [ ] **Phase 3: User Concept** — Owner field, scoped queries
+- [ ] **Phase 4: Auth** — API keys / JWT
+- [ ] **Phase 5: K8s** — Deploy with DockerSandboxClient sidecar
 
 ## 📅 Planned — Future Phases
 

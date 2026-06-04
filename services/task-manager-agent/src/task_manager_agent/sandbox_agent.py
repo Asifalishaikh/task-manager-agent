@@ -1,19 +1,21 @@
 """
-SandboxAgent — Task Manager Agent with filesystem + shell capabilities.
+SandboxAgent — Task Manager Agent with Docker sandbox + MCP tools.
 
 Runs inside a Docker container with:
-  - Filesystem access (read, write, edit files)
-  - Shell access (run commands, execute scripts)
   - MCP tools (capture, review, modify, resolve, remove tasks)
   - Gemini 3.1 Flash-Lite model via LiteLLM
+  - Persistent workspace with Manifest files
   - OpenAI for tracing only (optional)
+
+Note: Sandbox built-in capabilities (Filesystem, Shell) require OpenAI Responses API.
+With Gemini (ChatCompletions), only MCP tools are available.
 
 Usage:
   # Start MCP server first (Terminal 1):
   cd services/task-mcp && uv run python -m task_manager_mcp
 
   # Run SandboxAgent (Terminal 2):
-  uv run python -m task_manager_agent.sandbox_agent "Create a task from README.md"
+  uv run python -m task_manager_agent.sandbox_agent "Create a task called 'My Task'"
 
 Requirements:
   - Docker Desktop running
@@ -30,11 +32,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 from docker import from_env as docker_from_env
 
-from agents import MCPServer, Runner
+from agents import Runner
 from agents.run import RunConfig
+from agents.mcp.server import MCPServerStreamableHttp, MCPServerStreamableHttpParams
 from agents.sandbox import SandboxAgent, SandboxRunConfig, Manifest
-from agents.sandbox.entries import LocalDir, StringEntry
-from agents.sandbox.capabilities import Capabilities
+from agents.sandbox.entries import File
 from agents.sandbox.sandboxes.docker import (
     DockerSandboxClient,
     DockerSandboxClientOptions,
@@ -45,7 +47,7 @@ from agents.extensions.models.litellm_provider import LitellmProvider
 load_dotenv()
 
 # Use host.docker.internal so the container can reach the host's MCP server
-MCP_SERVER_URL = "http://host.docker.internal:8000/mcp"
+MCP_SERVER_URL = "http://localhost:8000/mcp"
 
 # Gemini model via LiteLLM (prefix with "gemini/")
 MODEL_NAME = "gemini/gemini-3.1-flash-lite"
@@ -53,42 +55,44 @@ MODEL_NAME = "gemini/gemini-3.1-flash-lite"
 
 def build_manifest():
     """Build workspace manifest — files available inside the sandbox."""
-    project_root = Path(__file__).resolve().parents[3]  # task-manager-agent root
+    # sandbox_agent.py is at: services/task-manager-agent/src/task_manager_agent/sandbox_agent.py
+    # project root is 4 levels up
+    project_root = Path(__file__).resolve().parents[4]
 
     return Manifest(
         entries={
-            "project/README.md": LocalDir(
-                src=str(project_root / "README.md")
+            "workspace/README.md": File(
+                content=b"# Sandbox Workspace\n\nThis is the Task Manager Sandbox.\n"
             ),
-            "scratch/tasks.txt": StringEntry(
-                content="# Tasks extracted from files\n"
+            "scratch/tasks.txt": File(
+                content=b"# Tasks extracted from files\n"
             ),
-            "services": LocalDir(src=str(project_root / "services")),
         }
     )
 
 
-def build_agent(manifest):
-    """Build the SandboxAgent with MCP tools + capabilities."""
-    mcp_server = MCPServer(url=MCP_SERVER_URL)
+def build_mcp_server():
+    """Create and connect MCP server."""
+    return MCPServerStreamableHttp(
+        params=MCPServerStreamableHttpParams(url=MCP_SERVER_URL)
+    )
 
+
+def build_agent(manifest, mcp_server):
+    """Build the SandboxAgent with MCP tools + capabilities."""
     return SandboxAgent(
         name="Task Manager Sandbox",
         instructions=(
-            "You are a task management agent with filesystem and shell access.\n\n"
+            "You are a task management agent.\n\n"
             "You can:\n"
-            "1. Use MCP tools (capture_task, review_task, modify_task, resolve_task, remove_task)\n"
-            "2. Read and write files using Filesystem capability\n"
-            "3. Run shell commands using Shell capability\n\n"
-            "When a user asks you to create tasks from files:\n"
-            "  - Read the file using Filesystem\n"
-            "  - Extract task information\n"
-            "  - Call capture_task for each task found\n"
-            "  - Save a summary to scratch/tasks.txt\n"
+            "1. Use MCP tools (capture_task, review_task, modify_task, resolve_task, remove_task)\n\n"
+            "When a user asks you to create tasks:\n"
+            "  - Use capture_task to create the task\n"
+            "  - Reply with the task details\n"
         ),
         mcp_servers=[mcp_server],
         default_manifest=manifest,
-        capabilities=Capabilities.default(),  # Filesystem + Shell + Compaction
+        capabilities=[],  # No sandbox capabilities (Gemini uses ChatCompletions, not Responses API)
         model=MODEL_NAME,
     )
 
@@ -113,9 +117,17 @@ async def main():
         print("Tracing: disabled (no OPENAI_API_KEY)")
     print(f"Prompt: {prompt}\n")
 
-    # Build manifest + agent
+    # Build manifest
     manifest = build_manifest()
-    agent = build_agent(manifest)
+
+    # Create and connect MCP server
+    mcp_server = build_mcp_server()
+    print("Connecting to MCP server...")
+    await mcp_server.connect()
+    print("MCP connected!")
+
+    # Build agent with connected MCP server
+    agent = build_agent(manifest, mcp_server)
 
     # Create Docker sandbox client
     docker_client = DockerSandboxClient(docker_from_env())
@@ -128,21 +140,19 @@ async def main():
         ),
     )
 
-    try:
-        async with sandbox:
-            result = await Runner.run(
-                agent,
-                prompt,
-                run_config=RunConfig(
-                    sandbox=SandboxRunConfig(session=sandbox),
-                    model_provider=LitellmProvider(),
-                    workflow_name="Sandbox Agent",
-                ),
-            )
-            print("\n=== Result ===")
-            print(result.final_output)
-    finally:
-        await sandbox.close()
+    async with sandbox:
+        result = await Runner.run(
+            agent,
+            prompt,
+            max_turns=30,
+            run_config=RunConfig(
+                sandbox=SandboxRunConfig(session=sandbox),
+                model_provider=LitellmProvider(),
+                workflow_name="Sandbox Agent",
+            ),
+        )
+        print("\n=== Result ===")
+        print(result.final_output)
 
 
 if __name__ == "__main__":

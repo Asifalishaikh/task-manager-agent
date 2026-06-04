@@ -147,6 +147,47 @@ Simple Agent (Task Manager)        ← handles chat + MCP tool calls
 
 ---
 
+## Testing Results (June 2026)
+
+### Simple Agent + Gemini + MCP
+```
+uv run python -m task_manager_agent.test_mcp
+```
+| Test | Result |
+|------|--------|
+| List MCP tools | ✅ Gemini listed all 5 tools |
+| Create task via MCP | ✅ "Test task from Gemini" created |
+| Review tasks via MCP | ✅ Task found and displayed |
+
+**Verdict:** Simple Agent works perfectly with Gemini + MCP.
+
+### SandboxAgent + Gemini + MCP (DockerSandboxClient)
+```
+uv run python -m task_manager_agent.sandbox_agent "Create a task"
+```
+| Test | Result |
+|------|--------|
+| Docker container creation | ✅ Container starts and mounts manifest |
+| MCP tools (capture, review) | ✅ Task created and verified |
+| Filesystem capability (read/write files) | ❌ Requires OpenAI Responses API |
+| Shell capability (run commands) | ❌ Requires OpenAI Responses API |
+
+**Verdict:** SandboxAgent Docker + MCP works. But **Filesystem and Shell capabilities require OpenAI's Responses API** — they don't work with Gemini via LiteLLM (which uses ChatCompletions).
+
+### Key Technical Findings
+
+| Finding | Detail |
+|---------|--------|
+| `MCPServer` is abstract | Use `MCPServerStreamableHttp` for Streamable HTTP transport |
+| MCP must be connected | Call `await mcp_server.connect()` before `Runner.run()` |
+| `StringEntry` renamed | Now called `File(content=b"...")` in the SDK |
+| `Capabilities.default()` | Already includes `Filesystem`, `Shell`, `Compaction` — no need to add duplicates |
+| Sandbox cleanup | Use `async with sandbox:` pattern (not explicit `close()`) |
+| `max_turns` | Sandbox + MCP needs higher limit (use `max_turns=30`) |
+| Gemini limitation | Sandbox capabilities require OpenAI Responses API (ChatCompletions incompatible) |
+
+---
+
 ## Consequences
 
 ### Positive
