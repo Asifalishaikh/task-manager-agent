@@ -91,17 +91,10 @@ Terminal → Agent → MCP tools       K8s Pod
 
 ### ✅ Tested
 
-```
-┌────────────────────────┬──────────────────┬─────────────────────────────────────────────────────────────────────┐
-│          Test          │      Script      │                           Ran in Docker?                            │
-├────────────────────────┼──────────────────┼─────────────────────────────────────────────────────────────────────┤
-│ Simple Agent + MCP     │ test_mcp.py      │ ❌  Agent runs directly on your machine (no Docker). Connects to MCP │
-│                        │                  │  server on localhost.                                               │
-├────────────────────────┼──────────────────┼─────────────────────────────────────────────────────────────────────┤
-│ SandboxAgent + Docker  │ sandbox_agent.py │ ✅  Agent runs inside a Docker container via DockerSandboxClient     │
-│ + MCP                  │                  │                                                                     │
-└────────────────────────┴──────────────────┴─────────────────────────────────────────────────────────────────────┘
-```
+| Test | Script | Ran in Docker? |
+|------|--------|---------------|
+| Simple Agent + MCP | `test_mcp.py` | ❌ Agent runs directly on host. Connects to MCP server on localhost. |
+| SandboxAgent + Docker + MCP | `sandbox_agent.py` | ✅ Agent runs inside Docker container via `DockerSandboxClient` |
 
 - **Step 1 — Hello Gemini** (`hello_gemini.py`): Standalone test — Gemini responds correctly ✅
 - **Step 2 — Simple Agent + MCP** (`test_mcp.py`): List tools, create task, review task — all work ✅

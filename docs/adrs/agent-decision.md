@@ -151,17 +151,10 @@ Simple Agent (Task Manager)        ← handles chat + MCP tool calls
 
 ### ⚠️ Docker Run Clarification
 
-```
-┌────────────────────────┬──────────────────┬─────────────────────────────────────────────────────────────────────┐
-│          Test          │      Script      │                           Ran in Docker?                            │
-├────────────────────────┼──────────────────┼─────────────────────────────────────────────────────────────────────┤
-│ Simple Agent + MCP     │ test_mcp.py      │ ❌  Agent runs directly on your machine (no Docker). Connects to MCP │
-│                        │                  │  server on localhost.                                               │
-├────────────────────────┼──────────────────┼─────────────────────────────────────────────────────────────────────┤
-│ SandboxAgent + Docker  │ sandbox_agent.py │ ✅  Agent runs inside a Docker container via DockerSandboxClient     │
-│ + MCP                  │                  │                                                                     │
-└────────────────────────┴──────────────────┴─────────────────────────────────────────────────────────────────────┘
-```
+| Test | Script | Ran in Docker? |
+|------|--------|---------------|
+| Simple Agent + MCP | `test_mcp.py` | ❌ Agent runs directly on host. Connects to MCP server on localhost. |
+| SandboxAgent + Docker + MCP | `sandbox_agent.py` | ✅ Agent runs inside Docker container via `DockerSandboxClient` |
 
 ### Simple Agent + Gemini + MCP
 ```

@@ -109,17 +109,10 @@ Deep-dive study of the SDK to decide agent architecture.
 ### ✅ Milestone 4: Agent Testing & Validation
 All agents tested end-to-end with Gemini 3.1 Flash-Lite + LiteLLM.
 
-```
-┌────────────────────────┬──────────────────┬─────────────────────────────────────────────────────────────────────┐
-│          Test          │      Script      │                           Ran in Docker?                            │
-├────────────────────────┼──────────────────┼─────────────────────────────────────────────────────────────────────┤
-│ Simple Agent + MCP     │ test_mcp.py      │ ❌  Agent runs directly on your machine (no Docker). Connects to MCP │
-│                        │                  │  server on localhost.                                               │
-├────────────────────────┼──────────────────┼─────────────────────────────────────────────────────────────────────┤
-│ SandboxAgent + Docker  │ sandbox_agent.py │ ✅  Agent runs inside a Docker container via DockerSandboxClient     │
-│ + MCP                  │                  │                                                                     │
-└────────────────────────┴──────────────────┴─────────────────────────────────────────────────────────────────────┘
-```
+| Test | Script | Ran in Docker? |
+|------|--------|---------------|
+| Simple Agent + MCP | `test_mcp.py` | ❌ Agent runs directly on host. Connects to MCP server on localhost. |
+| SandboxAgent + Docker + MCP | `sandbox_agent.py` | ✅ Agent runs inside Docker container via `DockerSandboxClient` |
 
 ### Test Scripts
 ```bash
