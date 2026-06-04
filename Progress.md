@@ -90,16 +90,19 @@ Terminal → Agent → MCP tools       K8s Pod
 ## ✅ Milestone 8: Agent Testing & Validation
 
 ### ✅ Tested: Step 1 — Hello Gemini (`hello_gemini.py`)
+- **Agent runs:** Directly on host (no Docker)
 - Simple Agent with Gemini 3.1 Flash-Lite via LiteLLM
 - Tested standalone — Gemini responds correctly ✅
 
 ### ✅ Tested: Step 2 — Simple Agent + MCP (`test_mcp.py`)
+- **Agent runs:** Directly on host (no Docker). MCP server runs in Docker.
 - Simple Agent with `MCPServerStreamableHttp` connecting to MCP server
 - **List tools** ✅ — Gemini listed all 5 tools
 - **Create task** ✅ — "Test task from Gemini" created
 - **Review tasks** ✅ — Task found and displayed
 
 ### ✅ Tested: Step 3 — SandboxAgent + Docker + MCP (`sandbox_agent.py`)
+- **Agent runs:** Inside Docker container via `DockerSandboxClient`. MCP server also runs in Docker.
 - DockerSandboxClient creates isolated container ✅
 - MCP tools work through Gemini ✅
 - **Create task via SandboxAgent** ✅ — "Sandbox Test Final" created and verified

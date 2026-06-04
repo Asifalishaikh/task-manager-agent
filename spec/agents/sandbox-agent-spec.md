@@ -355,7 +355,15 @@ Simple Agent (task manager CLI)
 
 ---
 
-## 10a. Technical Notes from Testing (June 2026)
+## 10a. Docker Run Clarification (June 2026)
+
+| Component | Runs in Docker? | Notes |
+|-----------|----------------|-------|
+| **MCP Server** (`task-mcp`) | ✅ Docker container | Always runs in Docker container |
+| **Simple Agent** (`test_mcp.py`) | ❌ Directly on host | Agent runs on your machine, connects to MCP in Docker |
+| **SandboxAgent** (`sandbox_agent.py`) | ✅ Inside DockerSandboxClient | Agent + sandbox workspace inside a Docker container |
+
+## 10b. Technical Notes from Testing (June 2026)
 
 | Finding | Detail |
 |---------|--------|
