@@ -3,6 +3,15 @@
   A step-by-step guide from concept to working system
 ================================================================================
 
+NOTE FOR READERS:
+  - AGENTS.md is the universal blueprint. It stays the same across all AI tools.
+    It contains only "@AGENTS.md" as a pointer for the AI to read the full file.
+  - CLAUDE.MD is specific to Claude Code. If using other AI tools like
+    Codex AI or Google Studio, replace CLAUDE.MD with the equivalent config
+    file (e.g., GEMINI.MD for Google Studio).
+  - ChatGPT CLI was used here, but alternatives like Codex AI CLI or
+    Google Studio can be used in its place.
+
 1. THE BEGINNING: EXCALIDRAW DIAGRAM
 -------------------------------------
 Before writing a single line of code, I sketched the entire system architecture
