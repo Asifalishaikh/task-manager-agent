@@ -1,0 +1,21 @@
+# Task Manager Agent
+
+> A multi-agent task management system using OpenAI Agents SDK and FastAPI.
+
+## Quick Start
+- README.md: Full project overview, architecture, milestones, setup guide
+
+## Key Documents
+- PROJECT_JOURNEY.txt: Step-by-step build journey from diagram to working system
+- AGENTS.md: System blueprint with architecture, agent roles, design principles
+- docs/adrs/agent-decision.md: Architecture Decision Record — Simple Agent vs SandboxAgent
+- spec/agents/sandbox-agent-spec.md: SandboxAgent specification
+- spec/mcp/: MCP server specifications (transport, tools, implementation, testing, roadmap)
+
+## Services
+- services/task-mcp/: MCP server — 5 tools (capture, review, modify, resolve, remove)
+- services/task-manager-agent/: Agent orchestrator
+
+## Status
+Completed: MCP Server, Docker, CI/CD, Agent SDK Research, Agent Testing (Gemini + MCP)
+Next: SQLite Database, Multi-agent orchestration, Kubernetes
