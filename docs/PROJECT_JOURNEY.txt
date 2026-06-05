@@ -108,6 +108,10 @@ on excalidraw.com. The diagram included:
 
 8. TESTING — VERIFY EVERYTHING
 --------------------------------
+  Two API keys were used during testing:
+    - Gemini API Key: Used by the agent to call MCP tools and respond to prompts
+    - OpenAI API Key: Used only for tracing (optional, no cost impact)
+
   Test 1: Hello Gemini
     - Simple Agent with Gemini 3.1 Flash-Lite via LiteLLM
     - Verified: Gemini responds correctly ✅
