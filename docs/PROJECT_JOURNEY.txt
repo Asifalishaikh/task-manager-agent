@@ -1,0 +1,135 @@
+﻿================================================================================
+  TASK MANAGEMENT AGENT — PROJECT JOURNEY
+  A step-by-step guide from concept to working system
+================================================================================
+
+1. THE BEGINNING: EXCALIDRAW DIAGRAM
+-------------------------------------
+Before writing a single line of code, I sketched the entire system architecture
+on excalidraw.com. The diagram included:
+
+  - MCP Server (task CRUD tools)
+  - OpenAI Agents SDK (multi-agent orchestration)
+  - FastAPI (API layer)
+  - Next.js UI (ignored for now)
+  - BetterAuth Service (ignored for now)
+
+  Link: https://excalidraw.com/#json=7un9SRgzb-gI5T7pK4s1y,ajNjmrVDwn1KX_m1Am4New
+
+
+2. AGENTS.MD — THE BLUEPRINT
+-----------------------------
+  - Exported the excalidraw diagram as an image
+  - Gave the image to ChatGPT CLI and asked it to generate AGENTS.md
+  - AGENTS.md became the system blueprint covering:
+      * Project architecture
+      * Agent roles (Task Manager, Appointment Booking, etc.)
+      * Data flow with verification checkpoints
+      * Design principles (Separation of Concerns, Verify by Default, etc.)
+      * Creator Workflow best practices
+
+  Note: The UI layer (Next.js) and Authentication layer (BetterAuth) were
+  intentionally excluded from AGENTS.md to focus on backend first.
+
+
+3. CLAUDE.MD — THE SETUP FILE
+------------------------------
+  - Opened AGENTS.md in Claude Code (Code Studio)
+  - Created CLAUDE.md in the project root with agent workspace rules
+  - AGENTS.md contained only "@AGENTS.md" as a reference marker
+  - Verified that Claude could read and understand AGENTS.md correctly
+
+  This step established the feedback loop between documentation and AI coding.
+
+
+4. SKILLS — LEARNING FROM EXPERTS
+-----------------------------------
+  Installed two skills to guide development:
+
+  SKILL 1: MCP Builder
+    Source: anthropics/skills (official)
+    Command: npx skills add https://github.com/anthropics/skills --skill mcp-builder
+    Purpose: Guide for creating high-quality MCP servers with FastMCP in Python
+
+  SKILL 2: Multi-Stage Dockerfile
+    Source: github/awesome-copilot (community)
+    Purpose: Create optimized multi-stage Dockerfiles for production builds
+
+
+5. MCP SERVER — THE FOUNDATION
+--------------------------------
+  Built an MCP server with 5 intent-based tools:
+
+    capture_task   → Create a new task from natural language
+    review_task    → List, search, and filter tasks
+    modify_task    → Update existing task fields
+    resolve_task   → Mark a task as completed
+    remove_task    → Delete a task permanently
+
+  Tech: Python 3.12, FastMCP, Streamable HTTP transport, InMemoryTaskStore
+  Docs: spec/mcp/ — transport, tools, implementation plan, testing, roadmap
+
+
+6. DOCKER + CI/CD — AUTOMATION
+--------------------------------
+  - Created a multi-stage Dockerfile (builder + runtime stages)
+  - Added non-root user for security
+  - Added HEALTHCHECK for container monitoring
+  - Set up GitHub Container Registry (ghcr.io)
+  - Configured GitHub Actions to auto-build on every push
+  - Image: ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp
+
+
+7. OPENAI AGENTS SDK — RESEARCH
+---------------------------------
+  Studied the SDK documentation to understand two agent types:
+
+  AGENT (Simple):
+    - Core building block with instructions, tools, MCP, handoffs, guardrails
+    - Works with any LLM via LiteLLM
+  
+  SANDBOXAGENT:
+    - Extends Agent with workspace isolation
+    - Adds Filesystem, Shell, Skills, Memory, Compaction capabilities
+    - Uses DockerSandboxClient for container-level isolation
+    - Bridges to Kubernetes deployment
+
+  DECISION: Use Simple Agent now, SandboxAgent for K8s later
+  DOCS: docs/adrs/agent-decision.md, spec/agents/sandbox-agent-spec.md
+
+
+8. TESTING — VERIFY EVERYTHING
+--------------------------------
+  Test 1: Hello Gemini
+    - Simple Agent with Gemini 3.1 Flash-Lite via LiteLLM
+    - Verified: Gemini responds correctly ✅
+
+  Test 2: Simple Agent + MCP
+    - Agent runs directly on local machine
+    - Connects to MCP server running in Docker
+    - Verified: List tools, create task, review task all work ✅
+
+  Test 3: SandboxAgent + Docker + MCP
+    - Agent runs inside Docker container via DockerSandboxClient
+    - MCP tools work through Gemini
+    - Verified: Docker container starts, MCP tools work, task created ✅
+
+  LIMITATION FOUND:
+    Sandbox built-in capabilities (Filesystem, Shell) require OpenAI's
+    Responses API — not available with Gemini via LiteLLM (uses
+    ChatCompletions). MCP tools work with both.
+
+
+9. CURRENT STATE
+-----------------
+  Milestone 1: MCP Server       — 5 tools, in-memory storage ✅
+  Milestone 2: Docker + CI/CD   — Multi-stage, ghcr.io, auto-build ✅
+  Milestone 3: SDK Research     — Agent vs SandboxAgent, ADR, Spec ✅
+  Milestone 4: Agent Testing    — Gemini, MCP, SandboxAgent all tested ✅
+
+  Next: SQLite Database → User Concept → Auth → Kubernetes
+
+
+================================================================================
+  END OF DOCUMENT
+================================================================================
