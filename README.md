@@ -114,18 +114,6 @@ All agents tested end-to-end with Gemini 3.1 Flash-Lite + LiteLLM.
 | Simple Agent + MCP | `test_mcp.py` | ❌ Agent runs directly on host. Connects to MCP server on localhost. |
 | SandboxAgent + Docker + MCP | `sandbox_agent.py` | ✅ Agent runs inside Docker container via `DockerSandboxClient` |
 
-### Test Scripts
-```bash
-# Step 1: Test Gemini
-uv run python -m task_manager_agent.hello_gemini
-
-# Step 2: Test Simple Agent with MCP (MCP server must be running)
-uv run python -m task_manager_agent.test_mcp
-
-# Step 3: Test SandboxAgent with Docker (Docker + MCP server must be running)
-uv run python -m task_manager_agent.sandbox_agent "Create a task"
-```
-
 ### Known Limitation
 Sandbox built-in capabilities (Filesystem, Shell) require **OpenAI Responses API** — they don't work with Gemini via LiteLLM (uses ChatCompletions). MCP tools work with both.
 
@@ -388,6 +376,40 @@ uv run python -m task_manager_agent.sandbox_agent "Read README.md and create a t
 | **Phase 3** | User Concept (owner field, scoped queries) | Multi-user support |
 | **Phase 4** | Auth Enforcement (API keys / JWT) | Secure access |
 | **Phase 5** | Kubernetes Deployment | SandboxAgent inside K8s pods, scaling |
+
+---
+
+## Development vs Production Files
+
+This project contains files for two purposes. During the learning phase, keep all files. For production deployment, only the **Production** files are needed.
+
+### ✅ Production Files (needed to run services)
+
+| Category | Files |
+|----------|-------|
+| **MCP Server** | `services/task-mcp/Dockerfile`, `.dockerignore`, `pyproject.toml` |
+| | `services/task-mcp/src/task_manager_mcp/__init__.py`, `__main__.py`, `server.py`, `models.py`, `store.py` |
+| | `services/task-mcp/src/task_manager_mcp/tools/capture.py`, `modify.py`, `remove.py`, `resolve.py`, `review.py` |
+| **Agent Service** | `services/task-manager-agent/pyproject.toml` |
+| | `services/task-manager-agent/src/task_manager_agent/__init__.py`, `main.py`, `sandbox_agent.py` |
+| **Root Config** | `pyproject.toml`, `uv.lock`, `.python-version`, `.gitignore`, `.mcp.json`, `.env.example` |
+| **Documentation** | `README.md`, `AGENTS.md`, `CLAUDE.md` |
+
+### 🧪 Development / Learning Files (not needed in production)
+
+| File | Purpose |
+|------|---------|
+| `services/task-manager-agent/src/task_manager_agent/hello_gemini.py` | Standalone test — Gemini model via LiteLLM |
+| `services/task-manager-agent/src/task_manager_agent/test_mcp.py` | Test — Simple Agent with MCP tools |
+| `Progress.md` | Project milestone tracking |
+| `docs/adrs/agent-decision.md` | Architecture Decision Record |
+| `docs/architecture.excalidraw` | Architecture diagram source |
+| `spec/` (entire directory) | Specifications for agents, MCP, transport, roadmap |
+| `.agents/` | Claude Code skill files (mcp-builder, multi-stage-dockerfile) |
+| `.claude/` | Claude Code local settings and skills |
+| `.github/workflows/task-mcp-ci.yml` | GitHub Actions CI/CD workflow |
+| `skills-lock.json` | Claude Code skill lock file |
+| `__pycache__/` (any directory) | Python bytecode cache (auto-generated) |
 
 ---
 
