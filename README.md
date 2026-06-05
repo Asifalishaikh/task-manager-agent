@@ -234,6 +234,12 @@ Every push to `master` that changes `services/task-mcp/**` triggers an automatic
 docker pull ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp:master
 ```
 
+**Why ghcr.io instead of Docker Hub?**
+- Unlimited private repositories (Docker Hub limits to 1)
+- Native GitHub integration — same repo, same GITHUB_TOKEN, no extra login
+- Permissions inherit from repo access automatically
+- Images visible under "Packages" on the GitHub repo sidebar
+
 ---
 
 ## Run Method Comparison: Python/uv vs Docker

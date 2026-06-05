@@ -83,7 +83,11 @@ on excalidraw.com. The diagram included:
   - Created a multi-stage Dockerfile (builder + runtime stages)
   - Added non-root user for security
   - Added HEALTHCHECK for container monitoring
-  - Set up GitHub Container Registry (ghcr.io)
+  - Chose GitHub Container Registry (ghcr.io) over Docker Hub because:
+      * Unlimited private repos (Docker Hub limits to 1)
+      * Native CI/CD integration — same repo, same GITHUB_TOKEN
+      * Permissions inherit from GitHub repo access automatically
+      * Images appear under "Packages" section on the GitHub repo page
   - Configured GitHub Actions to auto-build on every push
   - Image: ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp
 
