@@ -5,6 +5,34 @@
 
 ---
 
+## ✅ Phase 1 — Foundation (Complete)
+
+### 1a. MCP Server (5 Intent-Based Tools)
+- FastMCP server with Streamable HTTP transport on port 8000
+- 5 tools: `capture_task`, `review_task`, `modify_task`, `resolve_task`, `remove_task`
+- In-memory thread-safe task store (`InMemoryTaskStore`)
+- Pydantic models with validation and Field constraints
+- Markdown response format for agent-friendly output
+- Remote MCP client config (`.mcp.json`)
+
+### 1b. Multi-Stage Docker Build
+- Builder stage: uv dependency installation, bytecode compilation, tool verification
+- Runtime stage: minimal Python 3.12-slim, non-root user, HEALTHCHECK
+- Image: `ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp`
+
+### 1c. CI/CD (GitHub Actions)
+- `.github/workflows/task-mcp-ci.yml` — path-filtered to `services/task-mcp/**`
+- Auto-builds and pushes to ghcr.io on every master push
+- Tags: commit SHA, branch name, semver releases
+
+### 1d. Agent SDK Research & Testing
+- Studied `Agent` (Simple) vs `SandboxAgent` — documented in ADR-001
+- Simple Agent tested with Gemini 3.1 Flash-Lite + MCP tools ✅
+- SandboxAgent tested with DockerSandboxClient + MCP tools ✅
+- Key finding: Sandbox Filesystem/Shell capabilities require OpenAI Responses API
+
+---
+
 ## Phase 2 - Database Persistence
 
 When in-memory storage needs persistence:
@@ -79,7 +107,7 @@ spec:
 ## Summary
 
 ```
-Now      -> In-memory, flat tasks, no auth
+Phase 1  -> MCP Server + Docker + CI/CD + Agent SDK research & testing ✅
 Phase 2  -> + Database (SQLite -> PostgreSQL)
 Phase 3  -> + User concept (owner field, scoped queries)
 Phase 4  -> + Auth enforcement (API keys / JWT)
