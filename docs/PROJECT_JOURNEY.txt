@@ -3,15 +3,6 @@
   A step-by-step guide from concept to working system
 ================================================================================
 
-NOTE FOR READERS:
-  - AGENTS.md is the universal blueprint. It stays the same across all AI tools.
-    It contains only "@AGENTS.md" as a pointer for the AI to read the full file.
-  - CLAUDE.MD is specific to Claude Code. If using other AI tools like
-    Codex AI or Google Studio, replace CLAUDE.MD with the equivalent config
-    file (e.g., GEMINI.MD for Google Studio).
-  - ChatGPT CLI was used here, but alternatives like Codex AI CLI or
-    Google Studio can be used in its place.
-
 1. THE BEGINNING: EXCALIDRAW DIAGRAM
 -------------------------------------
 Before writing a single line of code, I sketched the entire system architecture
@@ -30,6 +21,8 @@ on excalidraw.com. The diagram included:
 -----------------------------
   - Exported the excalidraw diagram as an image
   - Gave the image to ChatGPT CLI and asked it to generate AGENTS.md
+    (Note: ChatGPT CLI was used here, but alternatives like Codex AI CLI
+    or Google Studio can be used in its place.)
   - AGENTS.md became the system blueprint covering:
       * Project architecture
       * Agent roles (Task Manager, Appointment Booking, etc.)
@@ -47,6 +40,12 @@ on excalidraw.com. The diagram included:
   - Created CLAUDE.md in the project root with agent workspace rules
   - AGENTS.md contained only "@AGENTS.md" as a reference marker
   - Verified that Claude could read and understand AGENTS.md correctly
+    (Note: AGENTS.md is the universal blueprint. It stays the same across all
+    AI tools. It contains only "@AGENTS.md" as a pointer for the AI to read
+    the full file.)
+  - CLAUDE.md is the config file used here. If using other AI tools like
+    Codex AI or Google Studio, replace with the equivalent config file
+    (e.g., GEMINI.md for Google Studio).
 
   This step established the feedback loop between documentation and AI coding.
 
