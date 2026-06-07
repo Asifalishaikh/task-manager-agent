@@ -20,9 +20,16 @@
 - Runtime stage: minimal Python 3.12-slim, non-root user, HEALTHCHECK
 - Image: `ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp`
 
-### 1c. CI/CD (GitHub Actions)
-- `.github/workflows/task-mcp-ci.yml` — path-filtered to `services/task-mcp/**`
-- Auto-builds and pushes to ghcr.io on every master push
+### 1c. CI + Registry (GitHub Actions)
+Two path-filtered workflows:
+
+| Service | Workflow | Trigger Path | Image |
+|---------|----------|-------------|-------|
+| MCP Server | `task-mcp-build.yml` | `services/task-mcp/**` | `ghcr.io/.../task-manager-mcp` |
+| SandboxAgent | `task-agent-build.yml` | `services/task-manager-agent/**` | `ghcr.io/.../task-manager-agent` |
+
+Auto-builds and pushes to ghcr.io on every master push (CI + delivery only).
+Full CD (auto-deploy to K8s) will be added in Phase 5.
 - Tags: commit SHA, branch name, semver releases
 
 ### 1d. Agent SDK Research & Testing

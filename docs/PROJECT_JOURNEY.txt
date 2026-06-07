@@ -78,18 +78,28 @@ on excalidraw.com. The diagram included:
   Docs: spec/mcp/ — transport, tools, implementation plan, testing, roadmap
 
 
-6. DOCKER + CI/CD — AUTOMATION
---------------------------------
-  - Created a multi-stage Dockerfile (builder + runtime stages)
-  - Added non-root user for security
-  - Added HEALTHCHECK for container monitoring
-  - Chose GitHub Container Registry (ghcr.io) over Docker Hub because:
-      * Unlimited private repos (Docker Hub limits to 1)
-      * Native CI/CD integration — same repo, same GITHUB_TOKEN
-      * Permissions inherit from GitHub repo access automatically
-      * Images appear under "Packages" section on the GitHub repo page
-  - Configured GitHub Actions to auto-build on every push
-  - Image: ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp
+6. DOCKER + CI + REGISTRY — AUTOMATION
+---------------------------------------
+  Created multi-stage Dockerfiles + CI workflows for both services:
+
+  MCP SERVER:
+    - Dockerfile: services/task-mcp/Dockerfile (builder + runtime, HEALTHCHECK)
+    - Workflow: .github/workflows/task-mcp-build.yml (triggers on services/task-mcp/**)
+    - Image: ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp
+
+  SANDBOXAGENT:
+    - Dockerfile: services/task-manager-agent/Dockerfile (builder + runtime)
+    - Workflow: .github/workflows/task-agent-build.yml (triggers on services/task-manager-agent/**)
+    - Image: ghcr.io/asifalishaikh/task-manager-agent/task-manager-agent
+
+  Chose GitHub Container Registry (ghcr.io) over Docker Hub because:
+    * Unlimited private repos (Docker Hub limits to 1)
+    * Native CI + registry integration — same repo, same GITHUB_TOKEN
+    * Permissions inherit from GitHub repo access automatically
+    * Images appear under "Packages" section on the GitHub repo page
+
+  Note: This is CI + delivery to registry only. Full CD (auto-deploy to
+  a live server like K8s) will be added in Part 3.
 
 
 7. OPENAI AGENTS SDK — RESEARCH
@@ -143,7 +153,37 @@ on excalidraw.com. The diagram included:
   Milestone 3: SDK Research     — Agent vs SandboxAgent, ADR, Spec ✅
   Milestone 4: Agent Testing    — Gemini, MCP, SandboxAgent all tested ✅
 
-  Next: SQLite Database → User Concept → Auth → Kubernetes
+  NEXT: SQLite Database → User Concept → Auth → Kubernetes
+
+
+APPENDIX: HOW THE AGENT USES MCP TOOLS IN PART 1
+-------------------------------------------------
+
+  The Task Manager Agent is the "brain" — it decides which MCP tool to call
+  based on user input. The MCP Server just executes the tool and returns data.
+
+  Flow:
+
+    User: "Create a task: Buy groceries"
+            ↓
+    Agent (LLM) understands intent
+            ↓
+    Agent calls MCP tool → capture_task(title="Buy groceries")
+            ↓
+    MCP Server processes → saves to InMemoryTaskStore
+            ↓
+    Returns result to Agent
+            ↓
+    Agent replies: "✅ Task created: Buy groceries"
+
+  All 5 tools work the same way — user says what they want → agent picks
+  the right tool → MCP executes → agent responds.
+
+    capture_task   →  "Save this task"
+    review_task    →  "Show me all tasks"
+    modify_task    →  "Change the title"
+    resolve_task   →  "Mark this done"
+    remove_task    →  "Delete this task"
 
 
 ================================================================================

@@ -76,20 +76,30 @@ Implement an MCP server with CRUD tools for task management, all in-memory.
 
 ---
 
-### ✅ Milestone 2: Multi-Stage Docker Build + CI/CD
-Containerize and automate the MCP server deployment.
+### ✅ Milestone 2: Multi-Stage Docker Build + CI + Registry
+Containerize services and automate build + push to registry.
 
+**MCP Server:**
 | Area | Detail |
 |------|--------|
-| **Dockerfile** | Multi-stage (builder + runtime), non-root user, HEALTHCHECK |
+| **Dockerfile** | `services/task-mcp/Dockerfile` — multi-stage, non-root user, HEALTHCHECK |
 | **Registry** | `ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp` |
-| **CI/CD** | `.github/workflows/task-mcp-ci.yml` — auto-build on `services/task-mcp/**` changes |
+| **CI + Registry** | `.github/workflows/task-mcp-build.yml` — auto-build on `services/task-mcp/**` changes |
 | **Verified** | Image built, container run, `tools/list` returns 5 tools ✅ |
+
+**SandboxAgent:**
+| Area | Detail |
+|------|--------|
+| **Dockerfile** | `services/task-manager-agent/Dockerfile` — multi-stage, non-root user |
+| **Registry** | `ghcr.io/asifalishaikh/task-manager-agent/task-manager-agent` |
+| **CI + Registry** | `.github/workflows/task-agent-build.yml` — auto-build on `services/task-manager-agent/**` changes |
+| **Verified** | Image built, modules verified, pushed to ghcr.io ✅ |
 
 **Run comparison:**
 | | Local (uv) | Docker |
 |---|---|---|
-| Command | `uv run python -m task_manager_mcp` | `docker run -p 8000:8000 task-mcp:latest` |
+| Command (MCP) | `uv run python -m task_manager_mcp` | `docker run -p 8000:8000 task-mcp:latest` |
+| Command (Agent) | `uv run python -m task_manager_agent.sandbox_agent "prompt"` | `docker run --network host -v /var/run/docker.sock:/var/run/docker.sock -e GEMINI_API_KEY=xxx task-agent:latest "prompt"` |
 | Best for | Development | Production / CI/CD |
 
 ---
@@ -214,13 +224,18 @@ curl -X POST http://localhost:8000/mcp \
 
 ---
 
-## CI/CD — GitHub Actions
+## CI + Registry — GitHub Actions
 
-Every push to `master` that changes `services/task-mcp/**` triggers an automatic build and push.
+Every push to `master` triggers automatic build + push to ghcr.io for the affected services. Note: this is **Continuous Integration + delivery to registry** — full Continuous Deployment (auto-deploy to a live server) will be added in Part 3 (K8s phase).
+
+| File | Service | Triggers on |
+|------|---------|-------------|
+| `.github/workflows/task-mcp-build.yml` | MCP Server | `services/task-mcp/**` changes |
+| `.github/workflows/task-agent-build.yml` | SandboxAgent | `services/task-manager-agent/**` changes |
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/task-mcp-ci.yml` | Builds Docker image, pushes to ghcr.io |
+| `.github/workflows/task-mcp-build.yml` | Builds Docker image, pushes to ghcr.io (CI + registry only, no auto-deploy) |
 
 **Automatic tags:**
 | Trigger | Tag |
@@ -229,9 +244,13 @@ Every push to `master` that changes `services/task-mcp/**` triggers an automatic
 | Git tag `v*` (release) | `v0.1.0`, `latest` |
 | Pull request | Build only (no push) |
 
-**Latest published image:**
+**Latest published images:**
 ```
+# MCP Server
 docker pull ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp:master
+
+# SandboxAgent
+docker pull ghcr.io/asifalishaikh/task-manager-agent/task-manager-agent:master
 ```
 
 **Why ghcr.io instead of Docker Hub?**
@@ -413,7 +432,8 @@ This project contains files for two purposes. During the learning phase, keep al
 | `spec/` (entire directory) | Specifications for agents, MCP, transport, roadmap |
 | `.agents/` | Claude Code skill files (mcp-builder, multi-stage-dockerfile) |
 | `.claude/` | Claude Code local settings and skills |
-| `.github/workflows/task-mcp-ci.yml` | GitHub Actions CI/CD workflow |
+| `.github/workflows/task-mcp-build.yml` | GitHub Actions CI + registry for MCP server |
+| `.github/workflows/task-agent-build.yml` | GitHub Actions CI + registry for SandboxAgent |
 | `skills-lock.json` | Claude Code skill lock file |
 | `__pycache__/` (any directory) | Python bytecode cache (auto-generated) |
 

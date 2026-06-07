@@ -1,11 +1,32 @@
-﻿name: CI - task-mcp
+﻿# =============================================================================
+# Build - task-mcp (CI + Registry only)
+# =============================================================================
+# Purpose:
+#   Builds the task-mcp Docker image and pushes it to GitHub Container
+#   Registry (ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp).
+#
+# This is CI + delivery to registry — NOT full CD (no auto-deploy to a
+# live server). Full CD (auto-deploy to K8s) will be added in Part 3.
+#
+# Triggers:
+#   - Push to master that changes services/task-mcp/** or this workflow file
+#   - Pull request to master that changes services/task-mcp/**
+#
+# Tags pushed:
+#   - Branch name (e.g., master)
+#   - Commit SHA (e.g., sha-a1b2c3d)
+#   - Semver tag (e.g., v0.1.0) when a git tag is pushed
+#
+# Pull requests: build only, no push to registry.
+# =============================================================================
+name: Build - task-mcp
 
 on:
   push:
     branches: [master]
     paths:
       - 'services/task-mcp/**'
-      - '.github/workflows/task-mcp-ci.yml'
+      - '.github/workflows/task-mcp-build.yml'
   pull_request:
     branches: [master]
     paths:

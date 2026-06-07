@@ -46,19 +46,27 @@
 - [x] HEALTHCHECK for container health monitoring
 - [x] Image built, run, and verified — `docker build + docker run + curl tools/list` ✅
 
-## ✅ Milestone 6: Container Registry & CI/CD
+## ✅ Milestone 6: Container Registry & CI + Registry
 
-### ✅ Done
+### ✅ Done — MCP Server
 - [x] Image tagged for registry (`ghcr.io/asifalishaikh/task-manager-mcp:v0.1.0`)
 - [x] Logged in to ghcr.io via GitHub CLI
 - [x] Image pushed to GitHub Container Registry
 - [x] Image verified — pullable from `ghcr.io/asifalishaikh/task-manager-mcp:v0.1.0`
-- [x] CI/CD workflow created: `.github/workflows/task-mcp-ci.yml`
-- [x] CI/CD tested — path filtering works, build + push succeeds ✅
+- [x] CI workflow created: `.github/workflows/task-mcp-build.yml`
+- [x] CI tested — path filtering works, build + push succeeds ✅
 
-### CI/CD workflow details
+### ✅ Done — SandboxAgent
+- [x] Agent Dockerfile created: `services/task-manager-agent/Dockerfile`
+- [x] Agent .dockerignore created: `services/task-manager-agent/.dockerignore`
+- [x] Agent Docker image built and modules verified 🔨
+- [x] Image tagged and pushed to `ghcr.io/asifalishaikh/task-manager-agent/task-manager-agent:master`
+- [x] CI workflow created: `.github/workflows/task-agent-build.yml`
+- [x] `requires-python` relaxed from `==3.12.2` to `>=3.12` for Docker compatibility
+
+### CI + Registry workflow details
 ```yaml
-# .github/workflows/task-mcp-ci.yml
+# .github/workflows/task-mcp-build.yml
 # Triggers on push/PR to master when services/task-mcp/** changes
 # Builds Docker image with docker/build-push-action
 # Pushes to ghcr.io with tags: commit SHA, branch name
@@ -121,6 +129,7 @@ Terminal → Agent → MCP tools       K8s Pod
 - [x] `test_mcp.py` — Step 2 test file  
 - [x] `sandbox_agent.py` — Step 3 SandboxAgent implementation
 - [x] CI/CD for task-mcp image (ghcr.io, auto-build on push)
+- [x] CI/CD for task-agent image (ghcr.io, auto-build on push)
 
 ### 📋 Road Ahead
 - [ ] **Phase 2: SQLite Database** — Swap InMemoryTaskStore for persistence

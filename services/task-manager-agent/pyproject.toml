@@ -2,7 +2,7 @@
 name = "task-manager-agent"
 version = "0.0.1"
 description = "Multi-agent task orchestrator using OpenAI Agents SDK and FastAPI."
-requires-python = "==3.12.2"
+requires-python = ">=3.12"
 dependencies = [
     "openai-agents>=0.0.1",
     "openai>=1.0.0",
