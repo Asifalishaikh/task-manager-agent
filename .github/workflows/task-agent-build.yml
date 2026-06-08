@@ -34,7 +34,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/task-manager-agent
+  IMAGE_NAME: ${{ github.repository }}/sandbox-agent
 
 jobs:
   build-and-push:
