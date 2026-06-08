@@ -69,3 +69,4 @@ USER app
 
 # Start the SandboxAgent CLI (prompt passed as arguments)
 ENTRYPOINT ["python", "-m", "task_manager_agent.sandbox_agent"]
+
