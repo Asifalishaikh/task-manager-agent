@@ -91,7 +91,7 @@ Containerize services and automate build + push to registry.
 | Area | Detail |
 |------|--------|
 | **Dockerfile** | `services/task-manager-agent/Dockerfile` — multi-stage, non-root user |
-| **Registry** | `ghcr.io/asifalishaikh/task-manager-agent/sandbox-agent` |
+| **Registry** | `ghcr.io/asifalishaikh/task-manager-agent/task-sandbox-agent` |
 | **CI + Registry** | `.github/workflows/task-agent-build.yml` — auto-build on `services/task-manager-agent/**` changes |
 | **Verified** | Image built, modules verified, pushed to ghcr.io ✅ |
 
@@ -250,7 +250,7 @@ Every push to `master` triggers automatic build + push to ghcr.io for the affect
 docker pull ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp:master
 
 # SandboxAgent
-docker pull ghcr.io/asifalishaikh/task-manager-agent/sandbox-agent:master
+docker pull ghcr.io/asifalishaikh/task-manager-agent/task-sandbox-agent:master
 ```
 
 **Why ghcr.io instead of Docker Hub?**

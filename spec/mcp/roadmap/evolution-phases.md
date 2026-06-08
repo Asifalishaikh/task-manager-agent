@@ -26,7 +26,7 @@ Two path-filtered workflows:
 | Service | Workflow | Trigger Path | Image |
 |---------|----------|-------------|-------|
 | MCP Server | `task-mcp-build.yml` | `services/task-mcp/**` | `ghcr.io/.../task-manager-mcp` |
-| SandboxAgent | `task-agent-build.yml` | `services/task-manager-agent/**` | `ghcr.io/.../sandbox-agent` |
+| SandboxAgent | `task-agent-build.yml` | `services/task-manager-agent/**` | `ghcr.io/.../task-sandbox-agent` |
 
 Auto-builds and pushes to ghcr.io on every master push (CI + delivery only).
 Full CD (auto-deploy to K8s) will be added in Phase 5.

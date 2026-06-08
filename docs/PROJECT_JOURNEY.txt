@@ -90,7 +90,7 @@ on excalidraw.com. The diagram included:
   SANDBOXAGENT:
     - Dockerfile: services/task-manager-agent/Dockerfile (builder + runtime)
     - Workflow: .github/workflows/task-agent-build.yml (triggers on services/task-manager-agent/**)
-    - Image: ghcr.io/asifalishaikh/task-manager-agent/sandbox-agent
+    - Image: ghcr.io/asifalishaikh/task-manager-agent/task-sandbox-agent
 
   Chose GitHub Container Registry (ghcr.io) over Docker Hub because:
     * Unlimited private repos (Docker Hub limits to 1)

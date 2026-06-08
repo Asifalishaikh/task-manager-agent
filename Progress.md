@@ -60,7 +60,7 @@
 - [x] Agent Dockerfile created: `services/task-manager-agent/Dockerfile`
 - [x] Agent .dockerignore created: `services/task-manager-agent/.dockerignore`
 - [x] Agent Docker image built and modules verified 🔨
-- [x] Image tagged and pushed to `ghcr.io/asifalishaikh/task-manager-agent/sandbox-agent:master`
+- [x] Image tagged and pushed to `ghcr.io/asifalishaikh/task-manager-agent/task-sandbox-agent:master`
 - [x] CI workflow created: `.github/workflows/task-agent-build.yml`
 - [x] `requires-python` relaxed from `==3.12.2` to `>=3.12` for Docker compatibility
 
