@@ -48,6 +48,9 @@ RUN uv sync --no-dev --extra sandbox --extra litellm && \
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim AS runtime
 
+# Install curl for debugging and health checks (removes apt cache to keep image small)
+RUN apt-get update -qq && apt-get install -y -qq curl && rm -rf /var/lib/apt/lists/*
+
 # Create non-root user (security best practice)
 RUN addgroup --system --gid 1001 app && \
     adduser --system --uid 1001 --ingroup app --no-create-home app
