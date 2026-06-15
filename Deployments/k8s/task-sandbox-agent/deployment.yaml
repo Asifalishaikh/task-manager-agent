@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-sandbox-agent
+  namespace: task-manager
+  labels:
+    app: task-sandbox-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: task-sandbox-agent
+  template:
+    metadata:
+      labels:
+        app: task-sandbox-agent
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: sandbox-agent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          image: ghcr.io/asifalishaikh/task-manager-agent/task-sandbox-agent:master
+          imagePullPolicy: Always
+          command: ["sleep", "infinity"]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          env:
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: task-sandbox-secret
+                  key: GEMINI_API_KEY
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: task-sandbox-secret
+                  key: OPENAI_API_KEY
+            - name: MCP_SERVER_URL
+              value: "http://task-mcp-service.task-manager.svc.cluster.local:8000/mcp"
+          volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+      volumes:
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket

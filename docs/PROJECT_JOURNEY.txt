@@ -1,191 +1,475 @@
 ﻿================================================================================
   TASK MANAGEMENT AGENT — PROJECT JOURNEY
-  A step-by-step guide from concept to working system
+  From excalidraw sketch to containerized CI/CD system
+================================================================================
+
+This document traces the full build journey of a multi-agent task management
+system using OpenAI Agents SDK, FastMCP, Docker, and GitHub Container Registry.
+Each section captures what was built, why it was built that way, and key lessons
+learned along the way.
+
+
+================================================================================
+  PART 1 — FOUNDATION
 ================================================================================
 
 1. THE BEGINNING: EXCALIDRAW DIAGRAM
 -------------------------------------
-Before writing a single line of code, I sketched the entire system architecture
-on excalidraw.com. The diagram included:
+Before writing code, the entire system architecture was sketched on excalidraw.com:
 
-  - MCP Server (task CRUD tools)
-  - OpenAI Agents SDK (multi-agent orchestration)
-  - FastAPI (API layer)
-  - Next.js UI (ignored for now)
-  - BetterAuth Service (ignored for now)
+  https://excalidraw.com/#json=7un9SRgzb-gI5T7pK4s1y,ajNjmrVDwn1KX_m1Am4New
 
-  Link: https://excalidraw.com/#json=7un9SRgzb-gI5T7pK4s1y,ajNjmrVDwn1KX_m1Am4New
+The diagram included:
+  - MCP Server — task CRUD tools
+  - OpenAI Agents SDK — multi-agent orchestration
+  - FastAPI — API layer
+  - Next.js UI — deferred to later phase
+  - BetterAuth Service — deferred to later phase
+
+This visual blueprint drove every subsequent decision. UI and auth layers were
+intentionally scoped out to focus on backend architecture first.
 
 
 2. AGENTS.MD — THE BLUEPRINT
 -----------------------------
   - Exported the excalidraw diagram as an image
-  - Gave the image to ChatGPT CLI and asked it to generate AGENTS.md
-    (Note: ChatGPT CLI was used here, but alternatives like Codex AI CLI
-    or Google Studio can be used in its place.)
+  - Used ChatGPT CLI to generate AGENTS.md from the diagram
+    (Alternatives: Codex AI CLI, Google Studio, or any LLM CLI)
   - AGENTS.md became the system blueprint covering:
-      * Project architecture
-      * Agent roles (Task Manager, Appointment Booking, etc.)
-      * Data flow with verification checkpoints
-      * Design principles (Separation of Concerns, Verify by Default, etc.)
+      * Architecture overview
+      * Agent roles (Task Manager, Appointment Booking, Notification)
+      * Data flow with verification checkpoints at every step
+      * Design principles: Separation of Concerns, Verify by Default
       * Creator Workflow best practices
 
-  Note: The UI layer (Next.js) and Authentication layer (BetterAuth) were
-  intentionally excluded from AGENTS.md to focus on backend first.
+  Note: AGENTS.md is the universal blueprint — it stays the same regardless
+  of which AI tool reads it. The file contains only "@AGENTS.md" as a pointer
+  for the AI to read the full document.
+
+  The UI layer (Next.js) and authentication (BetterAuth) were intentionally
+  excluded from AGENTS.md to maintain backend focus during Phase 1.
 
 
-3. CLAUDE.MD — THE SETUP FILE
-------------------------------
-  - Opened AGENTS.md in Claude Code (Code Studio)
-  - Created CLAUDE.md in the project root with agent workspace rules
-  - AGENTS.md contained only "@AGENTS.md" as a reference marker
+3. CLAUDE.MD — THE AI WORKSPACE CONFIG
+----------------------------------------
+  - Opened the project in Claude Code
+  - Created CLAUDE.md with workspace rules for the AI coding agent
   - Verified that Claude could read and understand AGENTS.md correctly
-    (Note: AGENTS.md is the universal blueprint. It stays the same across all
-    AI tools. It contains only "@AGENTS.md" as a pointer for the AI to read
-    the full file.)
-  - CLAUDE.md is the config file used here. If using other AI tools like
-    Codex AI or Google Studio, replace with the equivalent config file
-    (e.g., GEMINI.md for Google Studio).
 
-  This step established the feedback loop between documentation and AI coding.
+  If using other AI tools (Codex AI, Google Studio), replace CLAUDE.md with
+  the equivalent config file (e.g., GEMINI.md for Google Studio).
+
+  This step established a feedback loop between documentation and AI-assisted
+  development — the AI reads the blueprint, builds code, and documents as it goes.
 
 
 4. SKILLS — LEARNING FROM EXPERTS
 -----------------------------------
-  Installed two skills to guide development:
+Two skills were installed to guide development:
 
   SKILL 1: MCP Builder
     Source: anthropics/skills (official)
     Command: npx skills add https://github.com/anthropics/skills --skill mcp-builder
-    Purpose: Guide for creating high-quality MCP servers with FastMCP in Python
+    Purpose: Guide for building MCP servers with FastMCP in Python
 
   SKILL 2: Multi-Stage Dockerfile
     Source: github/awesome-copilot (community)
     Purpose: Create optimized multi-stage Dockerfiles for production builds
 
+  Later in Part 2, a third skill was created: dockerize-service — a reusable
+  skill for generating Dockerfile, .dockerignore, and CI workflow for any new service.
+
 
 5. MCP SERVER — THE FOUNDATION
 --------------------------------
-  Built an MCP server with 5 intent-based tools:
+Built an MCP server with 5 intent-based tools:
 
-    capture_task   → Create a new task from natural language
-    review_task    → List, search, and filter tasks
-    modify_task    → Update existing task fields
-    resolve_task   → Mark a task as completed
-    remove_task    → Delete a task permanently
+  capture_task   → Create a new task from natural language
+  review_task    → List, search, and filter tasks
+  modify_task    → Update existing task fields
+  resolve_task   → Mark a task as completed
+  remove_task    → Delete a task permanently
 
-  Tech: Python 3.12, FastMCP, Streamable HTTP transport, InMemoryTaskStore
-  Docs: spec/mcp/ — transport, tools, implementation plan, testing, roadmap
+  Tech stack: Python 3.12, FastMCP, Streamable HTTP transport, InMemoryTaskStore
+  Documentation: spec/mcp/ — transport, tools, implementation plan, testing, roadmap
+
+  Each tool accepts natural language input and returns markdown-formatted results
+  optimized for LLM consumption. The tools are intent-based — they capture what
+  the user means, not just literal commands.
 
 
 6. DOCKER + CI + REGISTRY — AUTOMATION
 ---------------------------------------
-  Created multi-stage Dockerfiles + CI workflows for both services:
+Multi-stage Dockerfiles and CI workflows were created for both services:
 
   MCP SERVER:
     - Dockerfile: services/task-mcp/Dockerfile (builder + runtime, HEALTHCHECK)
-    - Workflow: .github/workflows/task-mcp-build.yml (triggers on services/task-mcp/**)
+    - CI Workflow: .github/workflows/task-mcp-build.yml
     - Image: ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp
+    - Triggers: services/task-mcp/** changes
 
   SANDBOXAGENT:
     - Dockerfile: services/task-manager-agent/Dockerfile (builder + runtime)
-    - Workflow: .github/workflows/task-agent-build.yml (triggers on services/task-manager-agent/**)
+    - CI Workflow: .github/workflows/task-agent-build.yml
     - Image: ghcr.io/asifalishaikh/task-manager-agent/task-sandbox-agent
+    - Triggers: services/task-manager-agent/** changes
 
-  Chose GitHub Container Registry (ghcr.io) over Docker Hub because:
-    * Unlimited private repos (Docker Hub limits to 1)
-    * Native CI + registry integration — same repo, same GITHUB_TOKEN
-    * Permissions inherit from GitHub repo access automatically
-    * Images appear under "Packages" section on the GitHub repo page
+  Registry choice — GitHub Container Registry (ghcr.io) over Docker Hub:
+    - Unlimited private repositories (Docker Hub limits to 1)
+    - Native CI/CD integration — same repo, same GITHUB_TOKEN
+    - Permissions inherit from GitHub repo access automatically
+    - Images appear under "Packages" section on the GitHub repo page
 
-  Note: This is CI + delivery to registry only. Full CD (auto-deploy to
-  a live server like K8s) will be added in Part 3.
+  Note: This is CI + delivery to registry only. Full CD (auto-deploy to a
+  live server like K8s) will be added in Part 3.
 
 
 7. OPENAI AGENTS SDK — RESEARCH
 ---------------------------------
-  Studied the SDK documentation to understand two agent types:
+Studied the SDK documentation to compare two agent types:
 
-  AGENT (Simple):
+  AGENT (Simple Agent):
     - Core building block with instructions, tools, MCP, handoffs, guardrails
-    - Works with any LLM via LiteLLM
-  
+    - Works with any LLM via LiteLLM provider
+
   SANDBOXAGENT:
     - Extends Agent with workspace isolation
     - Adds Filesystem, Shell, Skills, Memory, Compaction capabilities
     - Uses DockerSandboxClient for container-level isolation
-    - Bridges to Kubernetes deployment
+    - Bridges directly to Kubernetes deployment
 
-  DECISION: Use Simple Agent now, SandboxAgent for K8s later
-  DOCS: docs/adrs/agent-decision.md, spec/agents/sandbox-agent-spec.md
+  Decision: Simple Agent for immediate CLI use, SandboxAgent for K8s deployment
+  Documentation: docs/adrs/agent-decision.md, spec/agents/sandbox-agent-spec.md
 
 
 8. TESTING — VERIFY EVERYTHING
 --------------------------------
-  Two API keys were used during testing:
-    - Gemini API Key: Used by the agent to call MCP tools and respond to prompts
-    - OpenAI API Key: Used only for tracing (optional, no cost impact)
+Two API keys were used during testing:
+  - Gemini API Key: Used by the agent to call MCP tools and respond to prompts
+  - OpenAI API Key: Used only for tracing (optional, no cost impact)
 
-  Test 1: Hello Gemini
-    - Simple Agent with Gemini 3.1 Flash-Lite via LiteLLM
-    - Verified: Gemini responds correctly ✅
+  Test 1 — Hello Gemini:
+    Simple Agent with Gemini 3.1 Flash-Lite via LiteLLM
+    Verified: Gemini responds correctly
 
-  Test 2: Simple Agent + MCP
-    - Agent runs directly on local machine
-    - Connects to MCP server running in Docker
-    - Verified: List tools, create task, review task all work ✅
+  Test 2 — Simple Agent + MCP:
+    Agent runs directly on host machine, connects to MCP server in Docker
+    List tools, create task, review task — all working
 
-  Test 3: SandboxAgent + Docker + MCP
-    - Agent runs inside Docker container via DockerSandboxClient
-    - MCP tools work through Gemini
-    - Verified: Docker container starts, MCP tools work, task created ✅
+  Test 3 — SandboxAgent + Docker + MCP:
+    Agent runs inside Docker container via DockerSandboxClient
+    MCP tools work through Gemini
+    Docker starts, tools work, task created
 
-  LIMITATION FOUND:
+  Limitation discovered:
     Sandbox built-in capabilities (Filesystem, Shell) require OpenAI's
-    Responses API — not available with Gemini via LiteLLM (uses
-    ChatCompletions). MCP tools work with both.
+    Responses API. They do not work with Gemini via LiteLLM (uses
+    ChatCompletions). MCP tools work with both providers.
 
 
-9. CURRENT STATE
------------------
-  Milestone 1: MCP Server       — 5 tools, in-memory storage ✅
-  Milestone 2: Docker + CI/CD   — Multi-stage, ghcr.io, auto-build ✅
-  Milestone 3: SDK Research     — Agent vs SandboxAgent, ADR, Spec ✅
-  Milestone 4: Agent Testing    — Gemini, MCP, SandboxAgent all tested ✅
-
-  NEXT: SQLite Database → User Concept → Auth → Kubernetes
-
-
-APPENDIX: HOW THE AGENT USES MCP TOOLS IN PART 1
--------------------------------------------------
-
+9. KEY ARCHITECTURAL INSIGHT — HOW AGENT USES MCP
+----------------------------------------------------
   The Task Manager Agent is the "brain" — it decides which MCP tool to call
-  based on user input. The MCP Server just executes the tool and returns data.
+  based on user input. The MCP Server executes the tool and returns data.
+  The agent never stores or manages tasks directly — it delegates to MCP.
 
   Flow:
-
     User: "Create a task: Buy groceries"
-            ↓
+        |
     Agent (LLM) understands intent
-            ↓
+        |
     Agent calls MCP tool → capture_task(title="Buy groceries")
-            ↓
+        |
     MCP Server processes → saves to InMemoryTaskStore
-            ↓
+        |
     Returns result to Agent
-            ↓
-    Agent replies: "✅ Task created: Buy groceries"
+        |
+    Agent replies: "Task created: Buy groceries"
 
-  All 5 tools work the same way — user says what they want → agent picks
-  the right tool → MCP executes → agent responds.
-
-    capture_task   →  "Save this task"
-    review_task    →  "Show me all tasks"
-    modify_task    →  "Change the title"
-    resolve_task   →  "Mark this done"
-    remove_task    →  "Delete this task"
+  All 5 tools follow this same pattern:
+    capture_task   → "Save this task"
+    review_task    → "Show me all tasks"
+    modify_task    → "Change the title"
+    resolve_task   → "Mark this done"
+    remove_task    → "Delete this task"
 
 
 ================================================================================
-  END OF DOCUMENT PART-1
+  END OF PART 1 — FOUNDATION COMPLETE
+================================================================================
+
+
+================================================================================
+  PART 2 — DOCKER + CI FOR SANDBOXAGENT
+================================================================================
+
+1. CONTAINERIZING THE SANDBOXAGENT
+------------------------------------
+  After Part 1 established CI for the MCP server, the same pattern was extended
+  to the SandboxAgent service. This was done manually by copying the MCP Dockerfile
+  pattern — no skill existed yet for this workflow.
+
+  Created:
+    - services/task-manager-agent/Dockerfile (multi-stage: builder + runtime)
+    - services/task-manager-agent/.dockerignore
+    - Built and verified: modules import correctly inside the container
+
+  Key differences from the MCP Dockerfile:
+    - No HEALTHCHECK (CLI tool, not a server)
+    - Requires --network host and Docker socket mount at runtime
+      to reach the host MCP server and create sandbox containers
+    - Dependencies include openai-agents[docker,litellm] for LiteLLM + Docker
+
+  After this experience, the dockerize-service skill was created so future
+  services (Notification API, Booking Agent) can follow the same pattern
+  automatically via the /dockerize-service command.
+
+
+2. CI PACKAGE PERMISSION LESSON
+---------------------------------
+  A critical learning experience with GitHub Container Registry permissions:
+
+  MCP Server (worked first time):
+    - Created Dockerfile + CI workflow → pushed to GitHub
+    - CI ran and created the package on ghcr.io automatically
+    - GITHUB_TOKEN (repo-scoped) had full write access
+
+  SandboxAgent (failed 3 times):
+    - The image was pushed FROM LOCAL MACHINE FIRST using a personal token
+    - This created a USER-SCOPED (private) package on ghcr.io
+    - When CI tried to push, GITHUB_TOKEN received: permission_denied: write_package
+    - Personal tokens can create user-scoped packages, but CI's GITHUB_TOKEN
+      can only write to REPO-SCOPED packages — not user-scoped ones
+
+  Resolution:
+    1. Deleted the user-scoped package via GitHub web UI:
+       Package settings → Delete this package → Confirm
+    2. Created a fresh image name that had no existing package
+    3. Pushed the workflow first (no local push) → CI created the package
+       as repo-scoped automatically
+    4. Every subsequent push (local or CI) worked
+
+  The Rule:
+    NEVER push a Docker image from your local machine to ghcr.io before CI
+    has created the package. Always let CI create the package first. CI's
+    GITHUB_TOKEN can only write to repo-scoped packages, not user-scoped.
+
+
+3. END OF PART 2 — CURRENT STATE
+-----------------------------------
+  Both services now have CI + registry push working:
+
+  | Service | Workflow | Image | Status |
+  |---------|----------|-------|--------|
+  | MCP Server | task-mcp-build.yml | task-manager-mcp | Done |
+  | SandboxAgent | task-agent-build.yml | task-sandbox-agent | Done |
+
+  Key points:
+    - This is CI + delivery to registry only (not full CD)
+    - Full auto-deploy to K8s will be added in Part 3
+    - Agent code changes are now automatically CI-covered
+
+
+================================================================================
+  END OF PART 2 — CI FOR ALL SERVICES COMPLETE
+================================================================================
+
+
+================================================================================
+  PART 3 — KUBERNETES DEVELOPMENT ENVIRONMENT
+================================================================================
+
+  (Implemented and tested on Docker Desktop K8s)
+
+1. OVERVIEW
+------------
+  Both services deployed to local K8s cluster, tested end-to-end.
+  This establishes the foundation for full CD automation.
+
+  Deployed services:
+
+  | Service | Image | Type | Replicas |
+  |---------|-------|------|----------|
+  | task-manager-mcp | task-manager-mcp:master | HTTP Server (:8000) | 2 |
+  | task-sandbox-agent | task-sandbox-agent:master | CLI (Docker-in-Docker) | 1 |
+
+  Key design decisions:
+    - No RBAC needed — services don't talk to K8s API
+    - securityContext enforced at pod + container level
+    - ServiceAccountName removed from manifests (default SA implied)
+    - sleep infinity keeps CLI agent alive for exec access
+    - curl added to agent image for in-pod debugging
+
+
+2. SECRET MANAGEMENT — FROM .ENV TO K8S
+-----------------------------------------
+  API keys must reach pods securely without touching GitHub. The process:
+
+  Step 1 — The .env file (local machine, in .gitignore):
+    GEMINI_API_KEY=ai-xxx...
+    OPENAI_API_KEY=sk-xxx...
+
+  Step 2 — Generate secret.yaml from .env:
+    kubectl create secret generic task-sandbox-secret \
+      --from-env-file=.env \
+      --namespace=task-manager \
+      --dry-run=client -o yaml > secret.yaml
+
+    This reads every key-value pair from .env, base64 encodes them automatically,
+    and writes a ready-to-use K8s Secret YAML.
+
+  Step 3 — Apply to cluster:
+    kubectl apply -f secret.yaml
+
+  Step 4 — Protect secret.yaml (add to .gitignore):
+    echo "secret.yaml" >> .gitignore
+
+  Why this approach works:
+    - .env stays local (never pushed to GitHub)
+    - secret.yaml is generated and applied locally (never pushed)
+    - Only the K8s cluster stores the encoded secrets
+    - For production, replace with Sealed Secrets or External Secrets Operator
+
+  Lesson learned: .env files must have each KEY=VALUE on a single line.
+  A line break in the middle of a value creates a malformed YAML complex key
+  in secret.yaml. Always verify secret.yaml after generation.
+
+
+3. K8S MANIFESTS STRUCTURE
+---------------------------
+  Deployments/k8s/
+  ├── namespace.yaml
+  ├── task-mcp/
+  │   ├── deployment.yaml
+  │   ├── service.yaml
+  │   └── configmap.yaml
+  └── task-sandbox-agent/
+      ├── deployment.yaml
+      └── secret.yaml (local only, in .gitignore)
+
+
+4. ROLE OF EACH YAML FILE
+---------------------------
+  namespace.yaml
+    → Creates an isolated space called "task-manager"
+    → All resources go here — easy to manage or delete as a unit
+
+  task-mcp/deployment.yaml
+    → Runs the MCP server container
+    → 2 replicas for reliability
+    → securityContext: runAsNonRoot, runAsUser: 1001
+    → Health checks (liveness + readiness probes on port 8000)
+    → CPU/memory resource limits
+
+  task-mcp/service.yaml
+    → ClusterIP service — gives the MCP pod a fixed DNS name
+    → Internal DNS: task-mcp-service.task-manager.svc.cluster.local
+
+  task-mcp/configmap.yaml
+    → Non-sensitive settings (LOG_LEVEL, HOST, PORT) injected at runtime
+
+  task-sandbox-agent/deployment.yaml
+    → Runs the agent container
+    → command: ["sleep", "infinity"] — keeps pod alive for exec access
+    → Mounts /var/run/docker.sock → can create sandbox containers
+    → Injects GEMINI_API_KEY and OPENAI_API_KEY from Secret
+    → securityContext: runAsNonRoot, allowPrivilegeEscalation: false, drop ALL caps
+    → No Service needed — CLI tool, not HTTP server
+    → Internal DNS to reach MCP via MCP_SERVER_URL env var
+
+  task-sandbox-agent/secret.yaml
+    → NOT COMMITTED to GitHub (in .gitignore)
+    → Generated locally from .env file
+    → Contains base64-encoded API keys
+
+
+5. SECRET FLOW DIAGRAM
+------------------------
+  .env (local machine, in .gitignore)
+    |
+    | kubectl create secret generic --from-env-file=.env
+    v
+  secret.yaml (local machine, in .gitignore)
+    |
+    | kubectl apply -f secret.yaml
+    v
+  K8s Cluster etcd (encrypted storage)
+    |
+    | referenced by deployment.yaml → env.valueFrom.secretKeyRef
+    v
+  Pod (SandboxAgent receives GEMINI_API_KEY as env var)
+
+
+6. APPLY ORDER
+---------------
+  Apply in this exact order (each step depends on previous):
+
+    1. kubectl apply -f Deployments/k8s/namespace.yaml
+    2. kubectl apply -f Deployments/k8s/task-mcp/configmap.yaml
+    3. kubectl apply -f Deployments/k8s/task-mcp/service.yaml
+    4. kubectl apply -f Deployments/k8s/task-mcp/deployment.yaml
+    5. kubectl create secret generic task-sandbox-secret \
+         --from-env-file=.env \
+         --namespace=task-manager \
+         --dry-run=client -o yaml > secret.yaml
+       kubectl apply -f secret.yaml
+    6. kubectl apply -f Deployments/k8s/task-sandbox-agent/deployment.yaml
+
+  Verify with: kubectl get pods -n task-manager -w
+
+
+7. FIXES APPLIED DURING SETUP
+-------------------------------
+
+  FIX 1 — .env file: OpenAI key was split across two lines due to paste
+    formatting. This created a malformed YAML complex key in secret.yaml.
+    Fix: merged to single OPENAI_API_KEY=sk-proj-... line, regenerated secret.
+
+  FIX 2 — securityContext: K8s-level enforcement of non-root user.
+    Pod-level: runAsNonRoot: true, runAsUser: 1001
+    Container-level (SandboxAgent): allowPrivilegeEscalation: false,
+    capabilities.drop: ["ALL"]. MCP server has pod-level only.
+    Note: allowPrivilegeEscalation and capabilities are container-level
+    fields, not pod-level. Putting them under spec.securityContext causes
+    "strict decoding error: unknown field".
+
+  FIX 3 — serviceAccountName: Both deployments had
+    "serviceAccountName: default" explicitly set. Removed entirely — when
+    omitted, K8s uses default SA implicitly. RBAC is unnecessary for
+    services that never call the K8s API.
+
+  FIX 4 — curl: Added to SandboxAgent Dockerfile for in-pod debugging.
+    curl was not available in the base python:3.12-slim image.
+    Fix: apt-get install curl in the runtime stage.
+
+  FIX 5 — Replicas: MCP server increased from 1 to 2 for availability.
+
+
+8. VERIFICATION TESTS
+----------------------
+  All tests pass after fixes:
+
+    Test 1 — DNS resolution:
+      task-mcp-service.task-manager.svc.cluster.local resolves to
+      internal cluster IP (10.101.226.200) from inside pod ✅
+
+    Test 2 — MCP tools via curl:
+      curl with Accept: application/json,text/event-stream header
+      Returns all 5 tools: capture_task, modify_task, remove_task,
+      resolve_task, review_task ✅
+
+    Test 3 — MCP tools via Python SDK:
+      MCPServerStreamableHttp connects, list_tools returns 5 tools ✅
+
+    Test 4 — Env vars from Secret:
+      GEMINI_API_KEY and OPENAI_API_KEY correctly injected ✅
+
+    Test 5 — securityContext applied:
+      Both pods show runAsNonRoot: true, runAsUser: 1001 ✅
+      SandboxAgent container shows allowPrivilegeEscalation: false,
+      capabilities.drop: [ALL] ✅
+
+
+================================================================================
+  END OF PART 3 — IMPLEMENTED AND VERIFIED
 ================================================================================

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: task-mcp-config
+  namespace: task-manager
+  labels:
+    app: task-mcp
+data:
+  LOG_LEVEL: "info"
+  MCP_HOST: "0.0.0.0"
+  MCP_PORT: "8000"

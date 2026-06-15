@@ -1,21 +1,67 @@
-# Task Manager Agent
+# Task Manager Agent — Project Map
 
-> A multi-agent task management system using OpenAI Agents SDK and FastAPI.
+> Multi-agent task management using OpenAI Agents SDK, FastMCP, Docker, and K8s.
 
 ## Quick Start
-- README.md: Full project overview, architecture, milestones, setup guide
+
+```bash
+# Start MCP server (development)
+cd services/task-mcp && uv run python -m task_manager_mcp
+
+# Build Docker image (MCP)
+docker build -t task-mcp:latest -f services/task-mcp/Dockerfile services/task-mcp
+
+# Test MCP tools
+curl -X POST http://localhost:8000/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json,text/event-stream" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":1}'
+
+# Deploy to K8s
+kubectl apply -f Deployments/k8s/namespace.yaml
+kubectl apply -f Deployments/k8s/task-mcp/configmap.yaml
+kubectl apply -f Deployments/k8s/task-mcp/service.yaml
+kubectl apply -f Deployments/k8s/task-mcp/deployment.yaml
+# Then generate + apply secret.yaml from .env
+# Then kubectl apply -f Deployments/k8s/task-sandbox-agent/deployment.yaml
+```
 
 ## Key Documents
-- PROJECT_JOURNEY.txt: Step-by-step build journey from diagram to working system
-- AGENTS.md: System blueprint with architecture, agent roles, design principles
-- docs/adrs/agent-decision.md: Architecture Decision Record — Simple Agent vs SandboxAgent
-- spec/agents/sandbox-agent-spec.md: SandboxAgent specification
-- spec/mcp/: MCP server specifications (transport, tools, implementation, testing, roadmap)
+- `README.md` — Project overview, milestones, setup
+- `AGENTS.md` — Agent workflow, skills, architecture, creator workflow
+- `CLAUDE.md` — AI workspace config (`@AGENTS.md`)
+- `Progress.md` — Task-level milestone tracking
+- `docs/PROJECT_JOURNEY.txt` — Build journey from diagram to working system
+- `docs/adrs/agent-decision.md` — ADR-001: Simple Agent vs SandboxAgent
+- `docs/adrs/k8s-deployment-decisions.md` — ADR-002: K8s decisions
 
 ## Services
-- services/task-mcp/: MCP server — 5 tools (capture, review, modify, resolve, remove)
-- services/task-manager-agent/: Agent orchestrator
+- `services/task-mcp/` — MCP server (5 intent-based tools, FastMCP, InMemoryTaskStore)
+- `services/task-manager-agent/` — Agent orchestrator (SandboxAgent + CLI)
+
+## Deployment
+- `Deployments/k8s/` — K8s manifests (namespace, deployments, service, configmap)
+- `.github/workflows/task-mcp-build.yml` — CI for MCP server
+- `.github/workflows/task-agent-build.yml` — CI for SandboxAgent
+
+## MCP Tools
+- `capture_task` — Create task from natural language
+- `review_task` — List, search, filter tasks
+- `modify_task` — Update task fields
+- `resolve_task` — Mark task completed
+- `remove_task` — Delete task permanently
+
+## Container Registry
+- `ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp:master`
+- `ghcr.io/asifalishaikh/task-manager-agent/task-sandbox-agent:master`
+
+## K8s (Docker Desktop)
+- Namespace: `task-manager`
+- MCP: 2 replicas, ClusterIP, port 8000, securityContext enforced
+- SandboxAgent: 1 replica, sleep infinity, Docker socket, securityContext
+- Internal DNS: `task-mcp-service.task-manager.svc.cluster.local:8000`
 
 ## Status
-Completed: MCP Server, Docker, CI/CD, Agent SDK Research, Agent Testing (Gemini + MCP)
-Next: SQLite Database, Multi-agent orchestration, Kubernetes
+✅ MCP Server | ✅ Docker + CI + Registry | ✅ Agent SDK Research
+✅ Agent Testing | ✅ K8s Deployment (Docker Desktop)
+📅 Next: SQLite Database, Multi-agent orchestration

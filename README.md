@@ -9,10 +9,10 @@ An end-to-end task management system built in progressive milestones:
 | # | Milestone | Status | What |
 |---|-----------|--------|------|
 | 1 | **MCP Server** | ✅ Complete | 5 intent-based tools (capture, review, modify, resolve, remove) with in-memory storage |
-| 2 | **Docker + CI/CD** | ✅ Complete | Multi-stage Docker image auto-built on push to `ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp` |
+| 2 | **Docker + CI + Registry** | ✅ Complete | Multi-stage Docker images auto-built on push to ghcr.io for both services |
 | 3 | **Agent SDK Research** | ✅ Complete | Studied `Agent` vs `SandboxAgent` — documented in ADR and spec |
-| 4 | **Agent Testing** | ✅ Complete | Simple Agent (Gemini + MCP) tested. SandboxAgent (Docker + MCP + Gemini) tested. See test scripts below. |
-| 5 | **Kubernetes** | 📅 Future | SandboxAgent inside K8s pods with DockerSandboxClient |
+| 4 | **Agent Testing** | ✅ Complete | Simple Agent (Gemini + MCP) tested. SandboxAgent (Docker + MCP + Gemini) tested |
+| 5 | **K8s Deployment** | ✅ Complete | Both services deployed to Docker Desktop K8s, tested end-to-end |
 
 ## System Architecture
 
@@ -44,7 +44,7 @@ User ──► CLI / API
                                     (Filesystem, Shell, Skills, Memory)
 
 K8s Pod:
-    ├── Simple Agent (HTTP server)
+    ├── MCP Server (2 replicas)
     └── SandboxAgent (sidecar) ──► DockerSandboxClient
 ```
 
@@ -52,8 +52,8 @@ K8s Pod:
 
 ```
 OpenAI Agents SDK
-    ├── Agent (Simple Agent) ── "Use now" ── CLI, MCP calls, task CRUD
-    └── SandboxAgent          ── "Use later" ── Filesystem, Shell, K8s
+    ├── Agent (Simple Agent) ── CLI, MCP calls, task CRUD
+    └── SandboxAgent          ── Filesystem, Shell, Docker-in-Docker
             └── DockerSandboxClient ── Container isolation ──► K8s
 ```
 
@@ -129,7 +129,29 @@ Sandbox built-in capabilities (Filesystem, Shell) require **OpenAI Responses API
 
 ---
 
-### 🔜 Next: Simple Agent CLI
+### ✅ Milestone 5: Kubernetes Deployment (Docker Desktop)
+Both services deployed to local K8s cluster with security hardening.
+
+| Area | Detail |
+|------|--------|
+| **Namespace** | `task-manager` — isolated environment for all resources |
+| **MCP Server** | 2 replicas, ClusterIP service, ConfigMap for settings |
+| **SandboxAgent** | 1 replica, Docker socket mounted, sleeps for exec access |
+| **Secrets** | Generated from `.env` → base64 encoded → K8s Secret (never committed) |
+| **Internal DNS** | `task-mcp-service.task-manager.svc.cluster.local:8000` |
+| **securityContext** | Pod-level: `runAsNonRoot`, `runAsUser: 1001`. Container: `allowPrivilegeEscalation: false`, `capabilities.drop: ALL` |
+| **RBAC** | Not needed — no service calls the K8s API |
+
+**Verified:**
+- MCP tools reachable via curl and SDK from inside SandboxAgent pod ✅
+- All 5 tools discovered: capture, review, modify, resolve, remove ✅
+- Env vars correctly injected from Secret ✅
+
+**Manifests:** `Deployments/k8s/`
+
+---
+
+### 🔜 Next: Database Persistence
 Build a CLI agent that call MCP tools via OpenAI SDK's `Agent` + `MCPServer`.
 
 **Plan:** `agent.py` → CLI runner `main.py` → End-to-end test
@@ -144,7 +166,8 @@ See `spec/mcp/roadmap/evolution-phases.md` for full roadmap.
 | File | Purpose |
 |------|---------|
 | **`Progress.md`** | Task-level milestone tracking — checkboxes for every item built |
-| **`docs/adrs/agent-decision.md`** | Architecture Decision Record — why Simple Agent vs SandboxAgent |
+| **`docs/adrs/agent-decision.md`** | ADR-001: Simple Agent vs SandboxAgent |
+| **`docs/adrs/k8s-deployment-decisions.md`** | ADR-002: K8s deployment decisions (security, RBAC, secrets, sleep) |
 | **`spec/mcp/`** | MCP server specifications — transport, tools, implementation plan, testing, roadmap |
 | **`spec/agents/sandbox-agent-spec.md`** | SandboxAgent specification — architecture, capabilities, Docker client, CLI usage |
 | **`AGENTS.md`** | Agent workflow documentation — creator workflow, verification, TDD standards |
@@ -400,7 +423,25 @@ uv run python -m task_manager_agent.sandbox_agent "Read README.md and create a t
 | **Phase 2** | Database Persistence (SQLite → PostgreSQL) | Tasks survive restarts |
 | **Phase 3** | User Concept (owner field, scoped queries) | Multi-user support |
 | **Phase 4** | Auth Enforcement (API keys / JWT) | Secure access |
-| **Phase 5** | Kubernetes Deployment | SandboxAgent inside K8s pods, scaling |
+| **Phase 5** | Production K8s (cloud cluster, HPA, Helm) | Move beyond Docker Desktop |
+
+### Deploying to K8s (Current Dev Setup)
+
+API keys are stored in `.env` (local, `.gitignore`). For K8s deployment:
+
+```bash
+# Generate secret.yaml from .env (auto base64 encoded)
+kubectl create secret generic task-sandbox-secret \
+  --from-env-file=.env \
+  --namespace=task-manager \
+  --dry-run=client -o yaml > secret.yaml
+
+# Apply to cluster
+kubectl apply -f secret.yaml
+```
+
+> `secret.yaml` is **never committed** to GitHub — add to `.gitignore`.
+> Production: use Sealed Secrets or External Secrets Operator instead.
 
 ---
 

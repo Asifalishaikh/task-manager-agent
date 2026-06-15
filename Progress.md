@@ -128,14 +128,32 @@ Terminal → Agent → MCP tools       K8s Pod
 - [x] `hello_gemini.py` — Step 1 test file
 - [x] `test_mcp.py` — Step 2 test file  
 - [x] `sandbox_agent.py` — Step 3 SandboxAgent implementation
-- [x] CI/CD for task-mcp image (ghcr.io, auto-build on push)
-- [x] CI/CD for task-agent image (ghcr.io, auto-build on push)
+- [x] CI for task-mcp image (ghcr.io, auto-build on push)
+- [x] CI for task-agent image (ghcr.io, auto-build on push)
+- [x] K8s deployment (Docker Desktop) — both services running and verified
+
+## ✅ Milestone 9: K8s Deployment (Docker Desktop)
+
+- [x] Created `Deployments/k8s/` with 6 manifest files:
+  - `namespace.yaml` — isolated task-manager namespace
+  - `task-mcp/configmap.yaml` — non-sensitive settings
+  - `task-mcp/deployment.yaml` — 2 replicas, health checks, securityContext
+  - `task-mcp/service.yaml` — ClusterIP, internal DNS
+  - `task-sandbox-agent/deployment.yaml` — sleep infinity, docker socket, securityContext
+  - `task-sandbox-agent/secret.yaml` — generated from .env, never committed
+- [x] Deployed in correct order: namespace → configmap → service → MCP deployment → secret → agent deployment
+- [x] Verified MCP tools via curl and SDK from inside pod
+- [x] Verified secret injection (GEMINI_API_KEY, OPENAI_API_KEY)
+- [x] Added securityContext (runAsNonRoot, allowPrivilegeEscalation: false, drop ALL caps)
+- [x] Removed explicit serviceAccountName (default SA used implicitly)
+- [x] Added curl to SandboxAgent Dockerfile for debugging
+- [x] Fixed .env file (OpenAI key split across lines) and regenerated secret.yaml
+- [x] Created developer notes: `docs/developer-notes/k8s-deployment-scenarios.md`
 
 ### 📋 Road Ahead
 - [ ] **Phase 2: SQLite Database** — Swap InMemoryTaskStore for persistence
 - [ ] **Phase 3: User Concept** — Owner field, scoped queries
 - [ ] **Phase 4: Auth** — API keys / JWT
-- [ ] **Phase 5: K8s** — Deploy with DockerSandboxClient sidecar
 
 ## 📅 Planned — Future Phases
 
@@ -154,9 +172,3 @@ Terminal → Agent → MCP tools       K8s Pod
 - [ ] API Keys or JWT auth middleware
 - [ ] Auth extracts user identity, injects into request context
 - [ ] Tools never handle auth directly
-
-### Phase 5: Kubernetes Deployment
-- [ ] `Deployments/k8s/` manifests (Deployment, Service, ConfigMap, HPA)
-- [ ] SandboxAgent inside K8s pods with `DockerSandboxClient` (sidecar pattern)
-- [ ] `Deployments/helm/` charts for multi-environment
-- [ ] CI/CD with GitHub Actions → ghcr.io → K8s

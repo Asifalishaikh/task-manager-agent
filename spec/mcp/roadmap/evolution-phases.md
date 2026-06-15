@@ -76,40 +76,53 @@ Options:
 Auth middleware extracts user identity and injects into request context.
 Tools never handle auth directly.
 
-## Phase 5 - Kubernetes Deployment
+## ✅ Phase 5 - Kubernetes Deployment (Complete)
 
-Production deployment target:
+Both services deployed to Docker Desktop K8s. Local dev cluster for testing.
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: task-mcp-server
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: task-mcp-server
-  template:
-    spec:
-      containers:
-      - name: mcp-server
-        image: task-mcp-server:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: MCP_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: mcp-secrets
-              key: api-key
-        - name: DATABASE_URL
-          value: "postgresql://..."
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
+### 5a. Secrets from .env (Step-by-Step)
+
+API keys never touch GitHub. Flow:
+
+```bash
+# 1. Generate secret.yaml from local .env (encodes to base64 automatically)
+kubectl create secret generic task-sandbox-secret \
+  --from-env-file=.env \
+  --namespace=task-manager \
+  --dry-run=client -o yaml > secret.yaml
+
+# 2. Add to .gitignore (never commit)
+echo "secret.yaml" >> .gitignore
+
+# 3. Apply to cluster
+kubectl apply -f secret.yaml
+
+# 4. Reference in deployment.yaml:
+# env:
+#   - name: GEMINI_API_KEY
+#     valueFrom:
+#       secretKeyRef:
+#         name: task-sandbox-secret
+#         key: GEMINI_API_KEY
 ```
+
+### 5b. Deployed Services
+
+| Service | Replicas | Type | Access |
+|---------|----------|------|--------|
+| task-mcp | 2 | HTTP Server (:8000) | `task-mcp-service.task-manager.svc.cluster.local` |
+| task-sandbox-agent | 1 | CLI (sleep infinity) | kubectl exec |
+
+### 5c. Security hardening applied
+- Pod-level securityContext: `runAsNonRoot`, `runAsUser: 1001`
+- Container-level: `allowPrivilegeEscalation: false`, `capabilities.drop: ALL`
+- serviceAccountName removed (default SA used implicitly)
+- Secrets generated from .env, never committed to GitHub
+
+### 5d. Known limitations
+- Gemini free tier quota (429 errors) blocks LLM calls after heavy testing
+- Docker socket owned by root — uid 1001 may have permission issues with DockerSandboxClient
+- `sleep infinity` keeps agent alive but doesn't run it actively
 
 ## Summary
 
@@ -118,5 +131,5 @@ Phase 1  -> MCP Server + Docker + CI/CD + Agent SDK research & testing ✅
 Phase 2  -> + Database (SQLite -> PostgreSQL)
 Phase 3  -> + User concept (owner field, scoped queries)
 Phase 4  -> + Auth enforcement (API keys / JWT)
-Phase 5  -> + K8s deployment (scaling, secrets, probes)
+Phase 5  -> + K8s deployment (Docker Desktop, securityContext, secrets) ✅
 ```

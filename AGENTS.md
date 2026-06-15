@@ -15,6 +15,14 @@ This project uses the [skills](https://github.com/anthropics/skills) system. Ins
   - `.agents/skills/mcp-builder/reference/node_mcp_server.md`
   - `.agents/skills/mcp-builder/reference/evaluation.md`
 
+### dockerize-service
+- **Location:** `.agents/skills/dockerize-service/`
+- **Purpose:** Create multi-stage Dockerfile, .dockerignore, and CI workflow for a new service
+- **When to use:** Adding a new service (e.g., Notification API, Booking Agent) that needs containerization
+- **How to use:** Load `SKILL.md` from the skill directory when starting Docker + CI setup
+- **References:**
+  - `.agents/skills/dockerize-service/references/examples.md` — Real examples from this project
+
 > **Note:** Skills are NOT MCP servers. Skills are prompt guides that help the AI. MCP servers provide executable tools under `/mcp`. The `mcp-builder` skill teaches how to build MCP servers — it does not provide MCP tools itself.
 
 ## Architecture Specs
@@ -30,6 +38,7 @@ MCP architecture decisions are documented under `spec/mcp/`:
 | Command | Description |
 |---------|-------------|
 | `/mcp-builder` | Launch the MCP Server Builder guide — 4-phase workflow for building MCP servers |
+| `/dockerize-service` | Create Dockerfile + .dockerignore + CI workflow for a new service |
 
 ---
 
@@ -387,18 +396,21 @@ Deployments/
 - All manifests reference images via environment-parameterized tags (never hardcoded `:latest`)
 - Use `kustomize` overlays if environments share 90%+ of config but need small diffs
 
-### 4. CI/CD Integration (Future)
+### 4. Current State: CI + Registry + Manual K8s Deploy
 
 ```
 [Commit] → [GitHub Action: Build & Push Image]
                               ↓
                      ghcr.io/<service>:<tag>
                               ↓
-                [GitHub Action: Deploy to K8s]
-                              ↓
-                    kubectl apply -f Deployments/k8s/
-                    OR helm upgrade <release> Deployments/helm/
+              (manual) kubectl apply -f Deployments/k8s/
 ```
+
+Full CD (auto-deploy on push) is still future. Currently:
+- CI builds and pushes images to ghcr.io automatically
+- K8s manifests live in `Deployments/k8s/`
+- Apply is manual: `kubectl apply -f Deployments/k8s/`
+- No Helm charts yet (raw YAML for dev simplicity)
 
 ### 5. Service Directory Migration (Near-term)
 

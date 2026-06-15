@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task-mcp
+  namespace: task-manager
+  labels:
+    app: task-mcp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: task-mcp
+  template:
+    metadata:
+      labels:
+        app: task-mcp
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: task-mcp
+          image: ghcr.io/asifalishaikh/task-manager-agent/task-manager-mcp:master
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          envFrom:
+            - configMapRef:
+                name: task-mcp-config
+          livenessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10

@@ -39,3 +39,7 @@ yarn-error.log*
 # Kubernetes/Docker
 .docker/
 *.log
+secret.yaml
+
+# Developer personal notes (not for public repo)
+docs/developer-notes/
